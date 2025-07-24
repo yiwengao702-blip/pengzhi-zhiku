@@ -10,8 +10,10 @@ from config.retrieval_config import retrieval_config  # [P1/P2-方案8] 检索�
 
 # [P0-方案3] RRF 融合上限：与 node_rerank 的 RERANK_MAX_TOPK(10) 对齐，避免前置截断压制相关性上限
 RRF_MAX_RESULTS: int = 10
-# [P0-方案3 / P1/P2-方案8] HyDE 路权重：默认 0.7，可被 .env 的 RRF_HYDE_WEIGHT 覆盖
-RRF_HYDE_WEIGHT: float = retrieval_config.rrf_hyde_weight
+# [P0-方案3 / P1/P2-方案8] HyDE 路权重：默认 0.7，可被 .env 的 RRF_HYDE_WEIGHT 覆盖。
+# 注意：这里**不再**在模块加载时固化，而是每次 process 调用实时读取 retrieval_config，
+# 以便评测脚本（tools/eval_retrieval.py --grid-search）能运行时改写权重并立即生效，
+# 也契合「改后重启后端即生效」的设计意图（连运行时动态调参都不必重启）。
 
 
 class NodeRrf(NodeBase):
@@ -56,7 +58,8 @@ class NodeRrf(NodeBase):
         # 3. 构建融合前的数据结构
         rrf_inputs = [
             (embedding_search_list, 1.0),# embedding 路权重保持 1.0
-            (hyde_embedding_search_list, RRF_HYDE_WEIGHT)  # [P0-方案3] HyDE 路权重下调至 0.7
+            # [P0-方案3] HyDE 路权重：实时读取配置（默认 0.7），支持运行时调参与 GridSearch
+            (hyde_embedding_search_list, retrieval_config.rrf_hyde_weight)
         ]
 
         # 4. 根据RRF公式进行数据的融合
