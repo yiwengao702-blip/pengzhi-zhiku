@@ -278,6 +278,12 @@ bash tools/run_eval.sh
 
 # 方式二：中间件已在跑时，只跑评测
 NO_UP=1 TOP_K=5 bash tools/run_eval.sh
+
+# 网格搜索模式：自动遍历权重组合并生成对比表（grid_result.json + 同目录 grid_result.csv）
+GRID=1 bash tools/run_eval.sh
+# 自定义候选轴（dense / hyde / min_score 逗号分隔）
+GRID=1 GRID_DENSE="1.0,0.6" GRID_HYDE="0.8,0.4" GRID_MIN_SCORE="0.75,0.6" \
+  GRID_OUT=grid_result.json bash tools/run_eval.sh
 ```
 
-评测还需 `.env` 配置好 LLM API Key（`OPENAI_API_KEY`）与 `BGE_M3_PATH` 指向本地模型；结果写入 `eval_report.json`（hit_rate / Recall@K / 平均·P95 耗时）。
+评测还需 `.env` 配置好 LLM API Key（`OPENAI_API_KEY`）与 `BGE_M3_PATH` 指向本地模型；单组结果写入 `eval_report.json`（hit_rate / Recall@K / 平均·P95 耗时），网格搜索结果写入 `grid_result.json`（含 `best` 最优组合与 `grid` 全量行）及 `grid_result.csv`。
