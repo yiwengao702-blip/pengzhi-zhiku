@@ -1,12 +1,41 @@
+"""
+导入流程节点基类
+
+定义统一的节点接口规范，提供通用功能
+"""
 import colorlog
-from processor.import_process.config import ImportConfig, get_config
-from processor.import_process.exceptions import ImportProcessError
+
+from processor.import_processor.config import ImportConfig, get_config
+from processor.import_processor.exceptions import ImportProcessError
+
+"""
+导入流程节点基类
+
+定义统一的节点接口规范，提供通用功能
+"""
 
 from abc import ABC, abstractmethod
 from typing import TypeVar, Optional
 import logging
 
-T = TypeVar("T")
+T = TypeVar("T")  # 泛型状态类型
+
+"""
+1、抽象的类（ABC），子类需要实现这个类
+2、抽象的方法（@abstractmethod process），子类需要实现这个方法
+3、name属性，子类必须覆盖这个属性
+4、__init__() 方法中初始化了日志记录器，日志记录器的名字是 self所在类的名字
+5、__init__() 方法中初始化了全局配置，获取全局单例配置对象
+6、__call__() 方法的调用时机  
+    (1)对象 = 类名() 
+    (2)结果 = 对象()     圆括号调用了__call__()方法
+7、self.process()， 当前这句话是从哪调用过来的，process()就定义在哪个位置
+8、未来可以在父类的process()中实现任务追踪
+9、封装了统一日志处理，使用logging、colorlog
+    注意：使用日志记录器记录日志时一定要先激活日志setup_logging(logging.INFO)，并指定日志级别
+
+"""
+
 
 class BaseNode(ABC):
     """
@@ -29,7 +58,7 @@ class BaseNode(ABC):
         workflow.add_node("my_node", node)
     """
 
-    name: str = "base_node"
+    name: str = "base_node"  # 节点名称，子类应覆盖
 
     def __init__(self, config: Optional[ImportConfig] = None):
         """
@@ -60,10 +89,13 @@ class BaseNode(ABC):
             ImportProcessError: 节点执行失败时抛出
         """
         try:
+            # 1. 开始准备执行节点
             self.logger.info(f"--- {self.name} 开始啦 ---")
 
+            # 2. 执行节点
             result = self.process(state)
 
+            # 3. 执行节点成功
             self.logger.info(f"--- {self.name} 完成啦 ---")
 
             return result
@@ -105,7 +137,7 @@ class BaseNode(ABC):
         self.logger.info(log_msg)
 
 
-
+# 配置日志格式
 def setup_logging(level: int = logging.INFO):
     """
     配置日志格式
@@ -123,7 +155,7 @@ def setup_logging(level: int = logging.INFO):
         datefmt='%Y-%m-%d %H:%M:%S',
         log_colors={
             'DEBUG': 'cyan',
-            'INFO': 'green',
+            'INFO': 'green',  # INFO 显示为绿色
             'WARNING': 'yellow',
             'ERROR': 'red',
             'CRITICAL': 'bold_red',
@@ -132,4 +164,3 @@ def setup_logging(level: int = logging.INFO):
 
     logger.handlers.clear()
     logger.addHandler(handler)
-

@@ -1,9 +1,17 @@
+"""
+导入流程配置管理模块
+
+集中管理所有配置项，支持环境变量覆盖
+"""
+
 from dataclasses import dataclass, field
 from typing import Set, Optional, Tuple
 import os
 from dotenv import load_dotenv
 
+# 加载 .env 文件
 load_dotenv(override=True)
+
 
 @dataclass
 class ImportConfig:
@@ -17,8 +25,17 @@ class ImportConfig:
     item_name_chunk_k: int = 3          # 商品名识别时使用的切片数量
     item_name_chunk_size: int = 2500    # 商品名识别时使用的切片内容长度
 
+    # 支持的图片扩展名
     image_extensions: Set[str] = field(
         default_factory=lambda: {".jpg", ".jpeg", ".png", ".gif", ".bmp", ".webp"}
+    )
+
+    # ==================== MinerU 配置 ====================
+    mineru_api_token: str = field(
+        default_factory=lambda: os.getenv("MINERU_API_TOKEN", "")
+    )
+    mineru_base_url: str = field(
+        default_factory=lambda: os.getenv("MINERU_BASE_URL", "")
     )
 
     # ==================== LLM 配置 ====================
@@ -74,7 +91,7 @@ class ImportConfig:
     embedding_batch_size: int = 8
 
     # ==================== 速率限制 ====================
-    requests_per_minute: int = 15
+    requests_per_minute: int = 15       # 图片总结 API 速率限制
 
     @classmethod
     def from_env(cls) -> "ImportConfig":
@@ -97,9 +114,3 @@ def get_config() -> ImportConfig:
     if _config is None:
         _config = ImportConfig.from_env()
     return _config
-
-
-if __name__ == "__main__":
-    a = get_config()
-    print(a.vl_model)
-    print(a.default_model)

@@ -1,9 +1,15 @@
+"""
+导入流程自定义异常类
+
+统一错误处理，提供更清晰的错误信息
+"""
+
 class ImportProcessError(Exception):
     """导入流程基础异常"""
 
     def __init__(self, message: str, node_name: str = "", cause: Exception = None):
-        self.node_name = node_name
-        self.cause = cause
+        self.node_name = node_name # 发生错误的流程节点名称
+        self.cause = cause  # 导致该错误的底层原始异常
         super().__init__(message)
 
     def __str__(self):
@@ -16,8 +22,10 @@ class ImportProcessError(Exception):
         return " ".join(parts)
 
 
+
 class StateFieldError(ImportProcessError):
     """状态字段错误。
+
     从 state 中获取必需字段缺失、为空或类型不符时抛出。
 
     Attributes:
@@ -95,21 +103,3 @@ class MinioError(StorageError):
 class ValidationError(ImportProcessError):
     """数据验证错误：输入数据不符合预期"""
     pass
-
-
-if __name__ == "__main__":
-    try:
-        # 可能失败的操作
-        print(10)
-    except Exception as e:
-        raise ValidationError(
-            message="向量写入失败",
-            node_name="import_milvus",
-            cause=e
-        )
-
-        raise StateFieldError(
-            node_name="一个节点",
-            field_name="第一个字段",
-            expected_type=str
-        )
