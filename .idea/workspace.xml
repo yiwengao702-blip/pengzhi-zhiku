@@ -4,36 +4,17 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="ef326508-b6c7-4d63-a768-640286f78dc4" name="更改" comment="06-23">
-      <change afterPath="$PROJECT_DIR$/processor/import_processor/main_graph、.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/processor/import_processor/nodes/node_bge_embedding.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/processor/import_processor/nodes/node_document_split.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/processor/import_processor/nodes/node_import_milvus.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/processor/import_processor/nodes/node_md_img.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/processor/import_processor/nodes/node_pdf_to_md.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/processor/import_processor/state.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/test/08_path.py" afterDir="false" />
+    <list default="true" id="ef326508-b6c7-4d63-a768-640286f78dc4" name="更改" comment="06-24">
+      <change afterPath="$PROJECT_DIR$/config/__init__.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/config/lm_config.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/config/mineru_config.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/test/09-requests模块.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/test/10-轮询.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/test/11-正则.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/test/12-双端队列+滑动窗口组合算法.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.env" beforeDir="false" afterPath="$PROJECT_DIR$/.env" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/processor/import_process/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/processor/import_processor/__init__.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/processor/import_process/base.py" beforeDir="false" afterPath="$PROJECT_DIR$/processor/import_processor/base.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/processor/import_process/config.py" beforeDir="false" afterPath="$PROJECT_DIR$/processor/import_processor/config.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/processor/import_process/exceptions.py" beforeDir="false" afterPath="$PROJECT_DIR$/processor/import_processor/exceptions.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/processor/import_process/nodes/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/processor/import_processor/nodes/__init__.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/processor/import_process/nodes/node_bge_embedding.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/processor/import_process/nodes/node_document_split.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/processor/import_process/nodes/node_entry.py" beforeDir="false" afterPath="$PROJECT_DIR$/processor/import_processor/nodes/node_enrty.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/processor/import_process/nodes/node_import_milvus.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/processor/import_process/nodes/node_item_name_recognition.py" beforeDir="false" afterPath="$PROJECT_DIR$/processor/import_processor/nodes/node_item_name_recognition.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/processor/import_process/nodes/node_md_img.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/processor/import_process/nodes/node_pdf_to_md.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/processor/import_process/nodes/node_test.py" beforeDir="false" afterPath="$PROJECT_DIR$/processor/import_processor/nodes/node_test.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/processor/import_process/state.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/pyproject.toml" beforeDir="false" afterPath="$PROJECT_DIR$/pyproject.toml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/test/04_abc抽象基类.py" beforeDir="false" afterPath="$PROJECT_DIR$/test/04_abc抽象基类.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/test/05_泛型.py" beforeDir="false" afterPath="$PROJECT_DIR$/test/05_泛型.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/test/07测试自己的base节点用.py" beforeDir="false" afterPath="$PROJECT_DIR$/test/07测试自己的base节点用.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/uv.lock" beforeDir="false" afterPath="$PROJECT_DIR$/uv.lock" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/processor/import_processor/nodes/node_md_img.py" beforeDir="false" afterPath="$PROJECT_DIR$/processor/import_processor/nodes/node_md_img.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -73,19 +54,26 @@
     "Python.07测试自己的base节点用.executor": "Run",
     "Python.08_path.executor": "Run",
     "Python.08_测试异常处理.executor": "Run",
+    "Python.09-requests模块.executor": "Run",
+    "Python.10-轮询.executor": "Run",
+    "Python.11-正则.executor": "Run",
+    "Python.12-双端队列+滑动窗口组合算法.executor": "Run",
     "Python.abc抽象基类.executor": "Run",
     "Python.base.executor": "Run",
     "Python.config.executor": "Run",
     "Python.exceptions (1).executor": "Run",
+    "Python.lm_config.executor": "Run",
     "Python.main.executor": "Run",
     "Python.main_graph、 (1).executor": "Run",
     "Python.main_graph、.executor": "Run",
+    "Python.minio_config.executor": "Run",
     "Python.node_bge_embedding.executor": "Run",
     "Python.node_document_split.executor": "Run",
     "Python.node_enrty.executor": "Run",
     "Python.node_entry.executor": "Run",
     "Python.node_import_milvus.executor": "Run",
     "Python.node_item_name_recognition.executor": "Run",
+    "Python.node_md_img (1).executor": "Run",
     "Python.node_md_img.executor": "Run",
     "Python.node_pdf_to_md.executor": "Run",
     "Python.node_test.executor": "Run",
@@ -103,12 +91,13 @@
 }]]></component>
   <component name="RecentsManager">
     <key name="MoveFile.RECENT_KEYS">
+      <recent name="D:\knowledge_base\config" />
       <recent name="D:\knowledge_base\processor\import_process\nodes" />
       <recent name="D:\knowledge_base" />
     </key>
   </component>
-  <component name="RunManager" selected="Python.node_pdf_to_md">
-    <configuration name="08_path" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+  <component name="RunManager" selected="Python.12-双端队列+滑动窗口组合算法">
+    <configuration name="09-requests模块" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="knowledge_base" />
       <option name="ENV_FILES" value="" />
       <option name="INTERPRETER_OPTIONS" value="" />
@@ -122,7 +111,7 @@
       <option name="ADD_CONTENT_ROOTS" value="true" />
       <option name="ADD_SOURCE_ROOTS" value="true" />
       <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
-      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/test/08_path.py" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/test/09-requests模块.py" />
       <option name="PARAMETERS" value="" />
       <option name="SHOW_COMMAND_LINE" value="false" />
       <option name="EMULATE_TERMINAL" value="false" />
@@ -131,7 +120,7 @@
       <option name="INPUT_FILE" value="" />
       <method v="2" />
     </configuration>
-    <configuration name="main_graph、 (1)" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+    <configuration name="10-轮询" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="knowledge_base" />
       <option name="ENV_FILES" value="" />
       <option name="INTERPRETER_OPTIONS" value="" />
@@ -140,12 +129,12 @@
         <env name="PYTHONUNBUFFERED" value="1" />
       </envs>
       <option name="SDK_HOME" value="" />
-      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/processor/import_processor" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/test" />
       <option name="IS_MODULE_SDK" value="true" />
       <option name="ADD_CONTENT_ROOTS" value="true" />
       <option name="ADD_SOURCE_ROOTS" value="true" />
       <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
-      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/processor/import_processor/main_graph、.py" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/test/10-轮询.py" />
       <option name="PARAMETERS" value="" />
       <option name="SHOW_COMMAND_LINE" value="false" />
       <option name="EMULATE_TERMINAL" value="false" />
@@ -154,7 +143,7 @@
       <option name="INPUT_FILE" value="" />
       <method v="2" />
     </configuration>
-    <configuration name="main_graph、" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+    <configuration name="11-正则" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="knowledge_base" />
       <option name="ENV_FILES" value="" />
       <option name="INTERPRETER_OPTIONS" value="" />
@@ -163,12 +152,12 @@
         <env name="PYTHONUNBUFFERED" value="1" />
       </envs>
       <option name="SDK_HOME" value="" />
-      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/processor/import_process" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/test" />
       <option name="IS_MODULE_SDK" value="true" />
       <option name="ADD_CONTENT_ROOTS" value="true" />
       <option name="ADD_SOURCE_ROOTS" value="true" />
       <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
-      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/processor/import_process/main_graph、.py" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/test/11-正则.py" />
       <option name="PARAMETERS" value="" />
       <option name="SHOW_COMMAND_LINE" value="false" />
       <option name="EMULATE_TERMINAL" value="false" />
@@ -177,7 +166,30 @@
       <option name="INPUT_FILE" value="" />
       <method v="2" />
     </configuration>
-    <configuration name="node_enrty" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+    <configuration name="12-双端队列+滑动窗口组合算法" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+      <module name="knowledge_base" />
+      <option name="ENV_FILES" value="" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/test" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/test/12-双端队列+滑动窗口组合算法.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
+    <configuration name="node_md_img" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="knowledge_base" />
       <option name="ENV_FILES" value="" />
       <option name="INTERPRETER_OPTIONS" value="" />
@@ -191,30 +203,7 @@
       <option name="ADD_CONTENT_ROOTS" value="true" />
       <option name="ADD_SOURCE_ROOTS" value="true" />
       <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
-      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/processor/import_processor/nodes/node_enrty.py" />
-      <option name="PARAMETERS" value="" />
-      <option name="SHOW_COMMAND_LINE" value="false" />
-      <option name="EMULATE_TERMINAL" value="false" />
-      <option name="MODULE_MODE" value="false" />
-      <option name="REDIRECT_INPUT" value="false" />
-      <option name="INPUT_FILE" value="" />
-      <method v="2" />
-    </configuration>
-    <configuration name="node_pdf_to_md" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
-      <module name="knowledge_base" />
-      <option name="ENV_FILES" value="" />
-      <option name="INTERPRETER_OPTIONS" value="" />
-      <option name="PARENT_ENVS" value="true" />
-      <envs>
-        <env name="PYTHONUNBUFFERED" value="1" />
-      </envs>
-      <option name="SDK_HOME" value="" />
-      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/processor/import_processor/nodes" />
-      <option name="IS_MODULE_SDK" value="true" />
-      <option name="ADD_CONTENT_ROOTS" value="true" />
-      <option name="ADD_SOURCE_ROOTS" value="true" />
-      <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
-      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/processor/import_processor/nodes/node_pdf_to_md.py" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/processor/import_processor/nodes/node_md_img.py" />
       <option name="PARAMETERS" value="" />
       <option name="SHOW_COMMAND_LINE" value="false" />
       <option name="EMULATE_TERMINAL" value="false" />
@@ -225,11 +214,11 @@
     </configuration>
     <recent_temporary>
       <list>
-        <item itemvalue="Python.node_pdf_to_md" />
-        <item itemvalue="Python.08_path" />
-        <item itemvalue="Python.node_enrty" />
-        <item itemvalue="Python.main_graph、 (1)" />
-        <item itemvalue="Python.main_graph、" />
+        <item itemvalue="Python.12-双端队列+滑动窗口组合算法" />
+        <item itemvalue="Python.11-正则" />
+        <item itemvalue="Python.node_md_img" />
+        <item itemvalue="Python.09-requests模块" />
+        <item itemvalue="Python.10-轮询" />
       </list>
     </recent_temporary>
   </component>
@@ -254,7 +243,9 @@
       <workItem from="1782180110995" duration="3387000" />
       <workItem from="1782184380361" duration="20776000" />
       <workItem from="1782258946946" duration="1326000" />
-      <workItem from="1782261181486" duration="17322000" />
+      <workItem from="1782261181486" duration="18452000" />
+      <workItem from="1782354544233" duration="20671000" />
+      <workItem from="1782390282400" duration="2018000" />
     </task>
     <task id="LOCAL-00001" summary="06-23">
       <option name="closed" value="true" />
@@ -272,7 +263,15 @@
       <option name="project" value="LOCAL" />
       <updated>1782213412537</updated>
     </task>
-    <option name="localTasksCounter" value="3" />
+    <task id="LOCAL-00003" summary="06-24">
+      <option name="closed" value="true" />
+      <created>1782302426670</created>
+      <option name="number" value="00003" />
+      <option name="presentableId" value="LOCAL-00003" />
+      <option name="project" value="LOCAL" />
+      <updated>1782302426670</updated>
+    </task>
+    <option name="localTasksCounter" value="4" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -280,13 +279,14 @@
   </component>
   <component name="VcsManagerConfiguration">
     <MESSAGE value="06-23" />
-    <option name="LAST_COMMIT_MESSAGE" value="06-23" />
+    <MESSAGE value="06-24" />
+    <option name="LAST_COMMIT_MESSAGE" value="06-24" />
   </component>
   <component name="com.intellij.coverage.CoverageDataManagerImpl">
     <SUITE FILE_PATH="coverage/knowledge_base$main.coverage" NAME="main 覆盖结果" MODIFIED="1782127160336" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/knowledge_base$03_.coverage" NAME="03_单例设计模式 覆盖结果" MODIFIED="1782182996752" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/test" />
     <SUITE FILE_PATH="coverage/knowledge_base$node_entry.coverage" NAME="node_entry 覆盖结果" MODIFIED="1782206970525" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/processor/import_process/nodes" />
-    <SUITE FILE_PATH="coverage/knowledge_base$node_md_img.coverage" NAME="node_md_img 覆盖结果" MODIFIED="1782207290364" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/processor/import_process/nodes" />
+    <SUITE FILE_PATH="coverage/knowledge_base$node_md_img.coverage" NAME="node_md_img 覆盖结果" MODIFIED="1782392303103" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/processor/import_processor/nodes" />
     <SUITE FILE_PATH="coverage/knowledge_base$node_import_milvus.coverage" NAME="node_import_milvus 覆盖结果" MODIFIED="1782211570150" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/processor/import_process/nodes" />
     <SUITE FILE_PATH="coverage/knowledge_base$02_dataclass_field.coverage" NAME="02_dataclass_field 覆盖结果" MODIFIED="1782183005711" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/test" />
     <SUITE FILE_PATH="coverage/knowledge_base$exceptions__1_.coverage" NAME="exceptions (1) 覆盖结果" MODIFIED="1782202477973" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/processor/import_process" />
@@ -296,17 +296,24 @@
     <SUITE FILE_PATH="coverage/knowledge_base$main_graph.coverage" NAME="main_graph、 覆盖结果" MODIFIED="1782269790121" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/processor/import_process" />
     <SUITE FILE_PATH="coverage/knowledge_base$base.coverage" NAME="base 覆盖结果" MODIFIED="1782269190075" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/processor/import_process" />
     <SUITE FILE_PATH="coverage/knowledge_base$08_path.coverage" NAME="08_path 覆盖结果" MODIFIED="1782270199395" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/test" />
+    <SUITE FILE_PATH="coverage/knowledge_base$12__.coverage" NAME="12-双端队列+滑动窗口组合算法 覆盖结果" MODIFIED="1782392109122" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/test" />
+    <SUITE FILE_PATH="coverage/knowledge_base$node_md_img__1_.coverage" NAME="node_md_img (1) 覆盖结果" MODIFIED="1782387409643" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/../python/13-企业级智能知识库系统项目/day04/解压后/knowledge_base/knowledge_base/processor/import_processor/nodes" />
     <SUITE FILE_PATH="coverage/knowledge_base$06_.coverage" NAME="06-日志 覆盖结果" MODIFIED="1782205300601" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/test" />
+    <SUITE FILE_PATH="coverage/knowledge_base$09_requests.coverage" NAME="09-requests模块 覆盖结果" MODIFIED="1782391328545" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/test" />
     <SUITE FILE_PATH="coverage/knowledge_base$node_document_split.coverage" NAME="node_document_split 覆盖结果" MODIFIED="1782207417620" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/processor/import_process/nodes" />
     <SUITE FILE_PATH="coverage/knowledge_base$state.coverage" NAME="state 覆盖结果" MODIFIED="1782269575062" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/processor/import_process" />
     <SUITE FILE_PATH="coverage/knowledge_base$04_.coverage" NAME="04_测试异常处理 覆盖结果" MODIFIED="1782184857086" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/test" />
     <SUITE FILE_PATH="coverage/knowledge_base$node_item_name_recognition.coverage" NAME="node_item_name_recognition 覆盖结果" MODIFIED="1782207485949" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/processor/import_process/nodes" />
     <SUITE FILE_PATH="coverage/knowledge_base$node_pdf_to_md.coverage" NAME="node_pdf_to_md 覆盖结果" MODIFIED="1782291518509" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/processor/import_processor/nodes" />
     <SUITE FILE_PATH="coverage/knowledge_base$config.coverage" NAME="config 覆盖结果" MODIFIED="1782185292467" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/processor/import_process" />
+    <SUITE FILE_PATH="coverage/knowledge_base$10_.coverage" NAME="10-轮询 覆盖结果" MODIFIED="1782391321881" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/test" />
     <SUITE FILE_PATH="coverage/knowledge_base$node_test.coverage" NAME="node_test 覆盖结果" MODIFIED="1782206699841" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/processor/import_process/nodes" />
     <SUITE FILE_PATH="coverage/knowledge_base$node_enrty.coverage" NAME="node_enrty 覆盖结果" MODIFIED="1782270094103" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/processor/import_processor/nodes" />
+    <SUITE FILE_PATH="coverage/knowledge_base$lm_config.coverage" NAME="lm_config 覆盖结果" MODIFIED="1782355416459" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/config" />
     <SUITE FILE_PATH="coverage/knowledge_base$node_bge_embedding.coverage" NAME="node_bge_embedding 覆盖结果" MODIFIED="1782269233758" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/processor/import_process/nodes" />
+    <SUITE FILE_PATH="coverage/knowledge_base$11_.coverage" NAME="11-正则 覆盖结果" MODIFIED="1782391416498" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/test" />
     <SUITE FILE_PATH="coverage/knowledge_base$05_.coverage" NAME="05_泛型 覆盖结果" MODIFIED="1782205048702" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/test" />
+    <SUITE FILE_PATH="coverage/knowledge_base$minio_config.coverage" NAME="minio_config 覆盖结果" MODIFIED="1782359461973" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/config" />
     <SUITE FILE_PATH="coverage/knowledge_base$07base.coverage" NAME="07测试自己的base节点用 覆盖结果" MODIFIED="1782211581782" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/test" />
     <SUITE FILE_PATH="coverage/knowledge_base$01_env.coverage" NAME="01_env和系统环境变量的优先级 覆盖结果" MODIFIED="1782181977701" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/test" />
   </component>
