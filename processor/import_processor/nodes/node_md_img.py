@@ -1,4 +1,3 @@
-# processor/import_processor/nodes/node_md_img.py
 import base64
 import json
 import logging
@@ -8,24 +7,24 @@ import time
 from collections import deque
 from pathlib import Path
 from typing import Tuple, List, Deque, Dict
-
 from langchain_openai import ChatOpenAI
+from minio import Minio
+from minio.deleteobjects import DeleteObject
 
 from config.lm_config import lm_config
+from config.minio_config import minio_config
 from processor.import_processor.base import BaseNode, setup_logging
 from processor.import_processor.exceptions import StateFieldError, FileProcessingError
 from processor.import_processor.state import ImportGraphState
-
+from utils.minio_utils import get_minio_client
 
 class NodeMDImg(BaseNode):
     """
     MarkDown图片处理节点：多模态图片理解
     """
-
     name = "node_md_img"
 
     def process(self, state: ImportGraphState):
-
         """
         MD文件图片处理核心节点
         核心流程：
@@ -38,36 +37,170 @@ class NodeMDImg(BaseNode):
         :param state: md_path、md_content
         :return: md_path、md_content
         """
-
-        # 步骤1：初始化数据，获取MD核心信息 校验
+        # 步骤1：初始化数据，获取MD核心信息
         md_content, md_path_obj, images_dir = self._step_1_get_content(state)
         if not images_dir.exists():
             self.logger.info("无图片文件夹，跳过图片处理")
             return state
-        # print(images_dir)
 
-        # # 步骤2：扫描并筛选MD中引用的图片
-        # 扫描了 你图片文件夹  挨个取出图片 把图片 上下文、图片路径、图片名称
+        # 步骤2：扫描并筛选MD中引用的图片
         target_images = self._step_2_scan_images(md_content, images_dir)
         if not target_images:
             self.logger.info("未检测到MD中引用了图片，跳过图片处理")
             return state
-        print(target_images)
-        #
-        # # 步骤3：调用多模态大模型生成图片摘要（大模型是如何描述你这个图片）
+
+        # 步骤3：调用多模态大模型生成图片摘要
         summaries = self._step_3_generate_summaries(md_path_obj.stem, target_images)
 
-        # # 步骤4：上传图片至MinIO，替换MD图片路径并填充摘要
-        # new_md_content = self._step_4_upload_and_replace(md_path_obj.stem, target_images, summaries, md_content)
-        #
-        # # 步骤5：备份并保存新MD文件
-        # new_md_file_name = self._step_5_backup_new_md_file(state['md_path'], new_md_content)
-        #
-        # # 步骤6：更新state状态值
-        # state["md_content"] = new_md_content
-        # state["md_path"] = new_md_file_name
+        # 步骤4：上传图片至MinIO，替换MD图片路径并填充摘要
+        new_md_content = self._step_4_upload_and_replace(md_path_obj.stem, target_images, summaries, md_content)
+
+        # 步骤5：备份并保存新MD文件
+        new_md_file_name = self._step_5_backup_new_md_file(state['md_path'], new_md_content)
+
+        # 步骤6：更新state状态值
+        state["md_content"] = new_md_content
+        state["md_path"] = new_md_file_name
 
         return state
+
+    def _step_5_backup_new_md_file(self, origin_md_path: str, md_content: str) -> str:
+        """
+        步骤5：将处理后的MD内容保存为新文件（原文件不变，避免数据丢失）
+        新文件命名规则：原文件名 + _new.md（如test.md → test_new.md）
+        :param origin_md_path: 原始MD文件完整路径
+        :param md_content: 处理后的新MD内容
+        :return: 新MD文件的完整路径
+        """
+        new_md_file_name = os.path.splitext(origin_md_path)[0] + "_new.md"
+        with open(new_md_file_name, "w", encoding="utf-8") as f:
+            f.write(md_content)
+
+        return new_md_file_name
+
+    def _step_4_upload_and_replace(
+            self,
+            doc_stem: str,
+            target_images: List[Tuple[str, str, Tuple[str, str]]],
+            summaries: Dict[str, str],
+            md_content: str
+    ) -> str:
+        """
+        步骤 4: 上传图片并合并信息，然后替换 Markdown 中的内容。
+
+        流程：
+        1. 确定 MinIO 上的上传目录（按文档名隔离）。
+        2. 清理该目录下的旧数据。
+        3. 批量上传图片。
+        4. 合并“图片摘要”和“图片URL”。
+        5. 替换 Markdown 文本中的图片引用。
+        :param doc_stem: 文档文件名（不含后缀），作为MinIO上传子目录名（按文档隔离）
+        :param target_images: 待处理图片列表，元素为(图片文件名, 图片完整路径, 图片上下文)
+        :param summaries: 图片摘要字典，键：图片文件名，值：内容摘要
+        :param md_content: 原始MD文件内容
+        :return: 图片引用替换后的新MD内容
+        """
+        # 1. 获取MinIO客户端
+        minio_client = get_minio_client()
+
+        # 2. 获取图片上传路径
+        minio_dir = minio_config.img_dir
+        upload_dir = f"{minio_dir}/{doc_stem}".replace(" ", "")
+
+        # 3. 清理已有目录
+        self._clean_minio_dir(minio_client, upload_dir)
+
+        # 4.批量上传
+        urls = self._upload_images_batch(minio_client, upload_dir, target_images)
+
+        # 5. 合并图片摘要和URL，过滤上传失败的图片
+        image_info = self._merge_summary_and_url(summaries, urls)
+
+        # 6. 替换MD中的图片引用
+        md_content = self._process_md_file(md_content, image_info)
+        return md_content
+
+    def _process_md_file(self, md_content: str, image_info: Dict[str, Tuple[str, str]]) -> str:
+        """
+        核心功能：替换MD内容中的本地图片引用为MinIO远程引用
+        替换规则：![原描述](本地路径) → ![图片摘要](MinIO访问URL)
+        :param md_content: 原始MD文件内容
+        :param image_info: 合并后的图片信息字典，键：图片文件名，值：(摘要, URL)
+        :return: 替换后的新MD内容
+        """
+        for image_file, (summary, new_url) in image_info.items():
+            pattern = re.compile(r"!\[.*?\]\(.*?" + re.escape(image_file) + r".*?\)")
+            #sub(替换规则, 将要被替换的内容
+            md_content = pattern.sub(lambda m: f"![{summary}]({new_url})", md_content)
+        return md_content
+
+    def _merge_summary_and_url(self, summaries: Dict[str, str], urls: Dict[str, str]) -> Dict[str, Tuple[str, str]]:
+        """
+        合并图片摘要字典和URL字典，过滤掉上传失败无URL的图片
+        :param summaries: 图片摘要字典，键：图片文件名，值：内容摘要
+        :param urls: 图片URL字典，键：图片文件名，值：MinIO访问URL
+        :return: 合并后的图片信息字典，键：图片文件名，值：(摘要, URL)元组
+        """
+        image_info = {}
+        for image_file, summary in summaries.items():
+            if url := urls.get(image_file):
+                image_info[image_file] = (summary, url)
+        return image_info
+
+    def _upload_images_batch(self, minio_client: Minio, upload_dir: str, target_images: List[Tuple]) -> Dict[str, str]:
+        """
+        批量上传待处理图片至MinIO，返回图片文件名与访问URL的映射关系
+        :param minio_client: 初始化完成的MinIO客户端对象
+        :param upload_dir: MinIO上传根目录
+        :param target_images: 待处理图片列表，元素为(图片文件名, 图片完整路径, 图片上下文)
+        :return: 图片URL字典，键：图片文件名，值：MinIO访问URL
+        """
+        urls = {}
+        for img_file, img_path, _ in target_images:
+            object_name = f"{upload_dir}/{img_file}"
+            urls[img_file] = self._upload_to_minio(minio_client, img_path, object_name)
+        return urls
+
+    def _upload_to_minio(self, minio_client: Minio, local_path: str, object_name: str) -> str | None:
+        """
+        将单张本地图片上传至MinIO对象存储，并返回公网可访问URL
+        :param minio_client: 初始化完成的MinIO客户端对象
+        :param local_path: 图片本地完整路径
+        :param object_name: MinIO中要存储的对象名称
+        :return: 图片MinIO访问URL（上传失败返回None）
+        """
+        try:
+            content_type = os.path.splitext(local_path)[1][1:]
+            minio_client.fput_object(
+                bucket_name = minio_config.bucket_name,
+                object_name=object_name,
+                file_path=local_path,
+                content_type=f"image/{content_type}",
+            )
+
+            #组织图片url
+            url = f"http://{minio_config.endpoint}/{minio_config.bucket_name}/{object_name}"
+            return url
+        except Exception as e:
+            self.logger.error(f"上传图片失败：{local_path}")
+
+    def _clean_minio_dir(self, minio_client: Minio, update_dir: str) -> None:
+        try:
+            # 1. 获取将要被删除的图片列表
+            objects_to_delete = minio_client.list_objects(minio_config.bucket_name, update_dir, recursive=True)
+
+            delete_list = [DeleteObject(obj.object_name) for obj in objects_to_delete]
+            errors = minio_client.remove_objects(
+                minio_config.bucket_name,
+                #需要一个 [DeleteObject]
+                delete_list,
+            )
+
+            #2. 打印错误信息
+            for error in errors:
+                self.logger.error(f"删除图片错误：{error}")
+        except Exception as e:
+            self.logger.error(f"MinIO连接失败，错误原因：{e}")
 
     def _step_3_generate_summaries(self, doc_stem: str, target_images: List[Tuple[str, str, Tuple[str, str]]]) -> Dict[str, str]:
         """
@@ -77,7 +210,6 @@ class NodeMDImg(BaseNode):
         :param requests_per_minute: 每分钟最大API请求数，默认9次（按大模型限制调整）
         :return: 图片摘要字典，键：图片文件名，值：图片内容摘要
         """
-
         # 1. 定义摘要
         summaries = {}
 
@@ -87,12 +219,11 @@ class NodeMDImg(BaseNode):
         # 3. 循环处理图片
         for img_file, img_path, context in target_images:
 
-            # 3.1 限速 作用
-            self._apply_api_rate_limit(request_deque, 3, 10)
+            # 3.1 限速
+            self._apply_api_rate_limit(request_deque, 10 )
 
             # 3.2 向模型发送请求
             summaries[img_file] = self._summarize_image(img_path, root_folder=doc_stem, image_content=context)
-
         return summaries
 
     def _summarize_image(self, image_path: str, root_folder: str, image_content: Tuple[str, str]) -> str:
@@ -104,12 +235,9 @@ class NodeMDImg(BaseNode):
            - root_folder: 文档所属文件夹名（提供更多上下文）。
            - image_content: 图片在文档中的上下文 (前文, 后文)。
         """
-
         # 1. 将图片转换成base64
         with open(image_path, "rb") as f:
             base64_image = base64.b64encode(f.read()).decode("utf-8")
-
-
         try:
             chat_model = ChatOpenAI(
                 model=lm_config.vl_model,
@@ -137,11 +265,7 @@ class NodeMDImg(BaseNode):
             ]
 
             response = chat_model.invoke(messages)
-            # 每次返回打印一次（self.logger 打印）
-            self.logger.error(response)
-            # self.logger.debug(response.content.strip().replace("\n",""))
             return response.content.strip().replace("\n","")
-
         except Exception as e:
             self.logger.error(f"获取图片摘要失败:{image_path}， 错误：{e}")
             return root_folder
@@ -165,21 +289,14 @@ class NodeMDImg(BaseNode):
         current_time = time.time()
 
         # 2. 清理滑动窗口中的过期请求
-        # rquest_times  空队列存在 并且 当前的时间 - 队列第0位元素的时间 大于时间窗口 10
         while request_times and current_time - request_times[0] >= window_seconds:
-            request_times.popleft() # 移除 第0位元素
-
-        # 往下走
+            request_times.popleft()
 
         # 3. 窗口内请求数达到上限，计算需要等待的时间并阻塞
-        # en(request_times) 判断队列长度
-        # 如果队列长度  大于 或者等于 3
         if len(request_times) >= max_requests:
-            # 3   =   3
             #计算需要等待的时长 = 窗口的总时长 - 窗口内第一个请求的时间
-            # 10S  -  当前的时间 - 第0位的时间  要等待的时间
             sleep_duration = window_seconds - (current_time - request_times[0])
-            if sleep_duration > 0:# 等待时间 大于 0
+            if sleep_duration > 0:
                 self.logger.info(f"请求被限速，等待{sleep_duration:.2f}秒...")
 
                 #等。。。。
@@ -201,7 +318,6 @@ class NodeMDImg(BaseNode):
         :param images_dir: 图片文件夹路径对象
         :return: 待处理图片列表，每个元素为(图片文件名, 图片完整路径, 图片上下文)元组
         """
-
         target_images = []
         # 对图片文件夹进行遍历
         for image_file in os.listdir(images_dir):
@@ -213,19 +329,17 @@ class NodeMDImg(BaseNode):
                 continue
 
             # 2. 组装图片的完整路径并转成字符串
-            # 完整图片路径 经过校验 合格  jpg
             img_path = str(images_dir / image_file)
 
             # 3. 查找这个图片在md文档中引用的上下文
-            # context 是元祖
             context = self._find_image_in_md(md_content, image_file)
-            if not context:#
+
+            if not context:
                 self.logger.warning(f"图片{image_file}未在md文档中找到")
                 continue
 
             # 4. 将查询到的图片组装到列表中
             target_images.append((image_file, img_path, context))
-
         return target_images
 
     def _step_1_get_content(self, state: ImportGraphState) -> Tuple[str, Path, Path]:
@@ -235,7 +349,6 @@ class NodeMDImg(BaseNode):
         :return: 元组(MD文件内容, MD文件路径, 图片文件夹路径)
         :raise FileProcessingError: 当状态中无有效MD文件路径时抛出
         """
-
         # 1. 参数非空校验
         md_path = state.get("md_path")
         if not md_path:
@@ -248,34 +361,35 @@ class NodeMDImg(BaseNode):
         md_path_obj = Path(md_path)
 
         # 3. 检查文件的有效性
-        if not md_path_obj.exists():# 如果md文件不存在
+        if not md_path_obj.exists():
             raise FileProcessingError(message=f"文件{md_path_obj.name}不存在")
-
 
         # 4. 获取md_content
         md_content = md_path_obj.read_text(encoding="utf-8")
 
-        # 5. 获取md文件的图片文件夹路径 D:\output\联想海豚用户手册\images
+        # 5. 获取md文件的图片文件夹路径
         img_dir = md_path_obj.parent / "images"
-
         return md_content, md_path_obj, img_dir
 
-    def _find_image_in_md(self,md_content: str, image_file: str, context_len: int = 100) -> Tuple[str, str]:
-
+    def _find_image_in_md(
+            self,
+            md_content: str,  # md文件的完整内容
+            image_file: str,  # 图片文件
+            context_len: int = 100) -> Tuple[str, str]:
         # re.escape ： 给我将参数中的特殊符号进行转义
         # r：不要给我转义
         # 1 定义正则表达式
         #  ![](images/ac26d5ab3a9f599eb2f58c2f2cb89f009fd2172b49782804756ea10c7256d4b4.jpg)
-        pattern = re.compile(r"!\[.*?\]\(.*?" + re.escape(image_file) + r".*?\)")# 就是把图片
+        pattern = re.compile(r"!\[.*?\]\(.*?" + re.escape(image_file) + r".*?\)")
         match = pattern.search(md_content)
-        if not match:# 匹配不到
+        if not match:
             # 没有找到图片
             return None
 
         # 2 截取图片前后的上文和下文
         start, end = match.span()
-        print(f"start =  {start}")
-        print(f"end =  {end}")
+        # print(f"start =  {start}")
+        # print(f"end =  {end}")
         pre_text = md_content[max(0, start - context_len):start]
         post_text = md_content[end:min(len(md_content), end + context_len)]
 
@@ -285,7 +399,7 @@ class NodeMDImg(BaseNode):
 if __name__ == "__main__":
     setup_logging()
 
-    md_path =  r"D:\python\13-企业级智能知识库系统项目\day02\课堂笔记\02_环境准备.md"
+    md_path =  r"D:\python\12-LangGraph\课件与资料\课堂笔记\LangGraph.md"
     with open(md_path, "r", encoding="utf-8") as f:
         md_content = f.read()
 
@@ -297,5 +411,4 @@ if __name__ == "__main__":
     # 执行核心处理流程
     node_md_img = NodeMDImg()
     result = node_md_img(init_state)
-
     logging.getLogger().info(json.dumps(result, ensure_ascii=False, indent=4))
