@@ -1,3 +1,5 @@
+# knowledge/processor/import_processor/base.py
+
 """
 导入流程节点基类
 
@@ -5,8 +7,9 @@
 """
 import colorlog
 
-from processor.import_processor.config import ImportConfig, get_config
+from processor.import_processor.config_base import ImportConfig, get_config
 from processor.import_processor.exceptions import ImportProcessError
+from utils.task_utils import add_running_task, add_done_task
 
 """
 导入流程节点基类
@@ -18,7 +21,7 @@ from abc import ABC, abstractmethod
 from typing import TypeVar, Optional
 import logging
 
-T = TypeVar("T")  # 泛型状态类型
+
 
 """
 1、抽象的类（ABC），子类需要实现这个类
@@ -35,7 +38,7 @@ T = TypeVar("T")  # 泛型状态类型
     注意：使用日志记录器记录日志时一定要先激活日志setup_logging(logging.INFO)，并指定日志级别
 
 """
-
+T = TypeVar("T")  # 泛型状态类型
 
 class BaseNode(ABC):
     """
@@ -92,6 +95,9 @@ class BaseNode(ABC):
             # 1. 开始准备执行节点
             self.logger.info(f"--- {self.name} 开始啦 ---")
 
+            # 开始：记录节点运行状态
+            add_running_task(state["task_id"], self.name)
+
             # 2. 执行节点
             result = self.process(state)
 
@@ -107,6 +113,10 @@ class BaseNode(ABC):
                 node_name=self.name,
                 cause=e
             )
+        finally:
+            # [BUG修复] add_done_task 移入 finally 块，确保异常/正常路径下都能标记任务完成
+            # 避免前端进度条因异常而永久卡在当前节点运行中
+            add_done_task(state["task_id"], self.name)
 
     @abstractmethod
     def process(self, state: T) -> T:

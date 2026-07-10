@@ -1,8 +1,10 @@
+# config/minio_config.py
+
 from dataclasses import dataclass
 import os
 from dotenv import load_dotenv
 
-load_dotenv()
+load_dotenv(override=True)
 
 @dataclass
 class MinIOConfig:
@@ -11,7 +13,7 @@ class MinIOConfig:
     secret_key: str
     bucket_name: str
     img_dir: str
-
+# 能够读配置
 minio_config = MinIOConfig(
     endpoint=os.getenv("MINIO_ENDPOINT"),
     access_key=os.getenv("MINIO_ACCESS_KEY"),

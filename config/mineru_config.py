@@ -1,4 +1,5 @@
-
+#knowledge_base\config\mineru_config.py
+# 区分 test（测试环境）和 prod（Production / 生产环境）后缀，是软件开发中非常经典且重要的环境隔离最佳实践。
 from dataclasses import dataclass
 import os
 from dotenv import load_dotenv

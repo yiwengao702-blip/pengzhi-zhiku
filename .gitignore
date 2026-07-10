@@ -1,2 +1,24 @@
+# 环境与密钥
 .env
 .venv
+
+# Python 构建产物
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+.pytest_cache/
+
+# IDE / 日志 / 工具内部目录
+.idea/
+.vscode/
+*.log
+.server.log
+.workbuddy/
+_preview/
+_deleted_backup/
+
+# 临时产物与压缩包
+*.zip
+knowledge_base.zip
+config.zip

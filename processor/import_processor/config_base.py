@@ -1,9 +1,11 @@
+# knowledge/processor/import_processor/config_base.py
+
 """
 导入流程配置管理模块
 
 集中管理所有配置项，支持环境变量覆盖
 """
-
+# 骨架
 from dataclasses import dataclass, field
 from typing import Set, Optional, Tuple
 import os
@@ -37,7 +39,6 @@ class ImportConfig:
     mineru_base_url: str = field(
         default_factory=lambda: os.getenv("MINERU_BASE_URL", "")
     )
-
     # ==================== LLM 配置 ====================
     openai_api_base: str = field(
         default_factory=lambda: os.getenv("OPENAI_API_BASE", "")
@@ -100,6 +101,7 @@ class ImportConfig:
 
     def get_minio_base_url(self) -> str:
         """获取 MinIO 基础 URL"""
+        # localhost:9000
         protocol = "https://" if self.minio_secure else "http://"
         return protocol + f"{self.minio_endpoint}"
 
@@ -114,3 +116,21 @@ def get_config() -> ImportConfig:
     if _config is None:
         _config = ImportConfig.from_env()
     return _config
+
+
+if __name__ == "__main__":
+    a = get_config()
+    print(a.get_minio_base_url())
+    # a = get_config()
+    # print(a.vl_model)
+    # print(a.default_model)
+
+
+    # llm = init_chat_model(model=a.default_model,  # 文本模型
+    #                              model_provider=a.item_model,
+    #                              api_key=a.openai_api_key,
+    #                              base_url=a.openai_api_base
+    # llm = init_chat_model(model="deepseek-ai/DeepSeek-V4-Flash",  # 文本模型
+    #                              model_provider="openai",
+    #                              api_key=os.getenv("SILICONFLOW_API_KEY"),
+    #                              base_url=os.getenv("SILICONFLOW_BASE_URL"))

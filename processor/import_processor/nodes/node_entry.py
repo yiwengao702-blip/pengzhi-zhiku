@@ -1,3 +1,4 @@
+# processor/import_processor/nodes/node_entry.py
 import json
 import logging
 from pathlib import Path
@@ -6,6 +7,7 @@ from processor.import_processor.base import BaseNode, setup_logging
 from processor.import_processor.exceptions import StateFieldError, FileProcessingError, ValidationError
 from processor.import_processor.state import ImportGraphState
 
+# 入口节点： 判断是PDF 还是 MD  决定下一个 去哪个节点工作
 
 class NodeEntry(BaseNode):
     """
@@ -17,7 +19,7 @@ class NodeEntry(BaseNode):
     def process(self, state: ImportGraphState):
         # 1.从state中获取文件的绝对路径
         import_file_path = state.get("import_file_path")
-        # 判断路径是否为空
+        # 路径非空校验
         if not import_file_path:
             raise StateFieldError(
                 field_name="import_file_path",
@@ -27,11 +29,12 @@ class NodeEntry(BaseNode):
         #2.将import_file_path转换为Path对象
         import_file_path_obj = Path(import_file_path)
 
-        if not import_file_path_obj.exists():
+        if not import_file_path_obj.exists():# 文件非空校验
             raise FileProcessingError(message=f"文件{import_file_path_obj.name}不存在")
 
         # 3.判断文件类型
         if import_file_path_obj.suffix == ".pdf":
+            # 往状态里面存  PDF
             state["is_pdf_read_enabled"] = True
             state["pdf_path"] = import_file_path
         elif import_file_path_obj.suffix == ".md":
