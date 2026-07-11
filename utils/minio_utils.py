@@ -1,27 +1,32 @@
+# utils/minio_utils.py
+
 import json
 import logging
 
 from minio import Minio
 
 from config.minio_config import minio_config
-from processor.import_processor.base import setup_logging
 
-setup_logging()
+# 注意：不再在此处调用 setup_logging()
+# 原因：setup_logging() 内部会执行 logger.handlers.clear() 清空所有已注册的 handler，
+#       这会与 tool/logger.py 中配置的彩色日志 handler 冲突，导致日志输出异常。
+#       日志配置统一由 tool/logger.py 在模块加载时完成。
 
 try:
     # 1.创建客户端链接对象
     minio_client = Minio(
-        endpoint=minio_config.endpoint,
-        access_key=minio_config.access_key,
+        endpoint=minio_config.endpoint,# 地址
+        access_key=minio_config.access_key,# 两个密钥
         secret_key=minio_config.secret_key,
         #是否强制启用HTTPS的加密链接方式，False：使用http；True：使用https
         secure=False
     )
 
     # 2.判断bucket是否存在，不存在则创建
+    # 拿到 knowledge-base bucket（桶）
     found = minio_client.bucket_exists(minio_config.bucket_name)
     if not found:
-        minio_client.make_bucket(minio_config.bucket_name)
+        minio_client.make_bucket(minio_config.bucket_name)# 创建
 
     # 3. 定义当前bucket的访问权限
     policy = {
