@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+  <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate, max-age=0" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta http-equiv="Expires" content="0" />
+  <title>鹏至智库 · 知识概览</title>
+  <link rel="stylesheet" href="assets/css/theme.css?v=20261013">
+  <link rel="stylesheet" href="assets/css/overview.css?v=20261014">
+  <script src="assets/js/app-config.js?v=20261012"></script>
+  <script>
+  /* 主题防闪烁：在 <body> 绘制前根据 localStorage 预设 data-theme */
+  (function(){
+    var STORE='kb_theme';
+    function getTheme(){ return document.documentElement.getAttribute('data-theme')==='dark' ? 'dark' : 'light'; }
+    function setTheme(t){
+      if(t==='dark') document.documentElement.setAttribute('data-theme','dark');
+      else document.documentElement.removeAttribute('data-theme');
+      try{ localStorage.setItem(STORE,t); }catch(e){}
+    }
+    try{ if(localStorage.getItem(STORE)==='dark') document.documentElement.setAttribute('data-theme','dark'); }catch(e){}
+    function toggleTheme(){ setTheme(getTheme()==='dark' ? 'light' : 'dark'); }
+    document.addEventListener('DOMContentLoaded',function(){
+      var b=document.getElementById('themeToggle');
+      if(b){
+        b.addEventListener('click', function(e){ e.preventDefault(); toggleTheme(); });
+        b.addEventListener('keydown', function(e){ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); toggleTheme(); } });
+      }
+    });
+    window.__toggleTheme = toggleTheme;
+  })();
+  </script>
+</head>
+<body>
+  <div class="appshell">
+    <!-- 顶部应用栏（全站统一） -->
+    <header class="appbar">
+      <a class="appbar__brand" href="/" data-nav="portal" title="返回首页">
+        <span class="appbar__logo">鹏</span>
+        <span class="appbar__name">鹏至智库</span>
+        <span class="appbar__tag">企业知识中枢</span>
+      </a>
+      <div class="appbar__tools">
+        <div class="appbar__search">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+          <input type="text" placeholder="搜索知识库、文档、问答…" aria-label="搜索">
+        </div>
+        <button class="appbar__bell" type="button" title="通知" aria-label="通知">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>
+          <span class="appbar__dot"></span>
+        </button>
+        <button class="theme-toggle" id="themeToggle" type="button" title="切换浅色/深色" aria-label="切换浅色/深色">
+          <svg class="ic-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+          <svg class="ic-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
+        </button>
+        <button class="appbar__user" id="userBtn" type="button" title="账户">
+          <span class="appbar__avatar">鹏</span>
+          <span class="appbar__uname">管理员</span>
+          <svg class="caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+        </button>
+        <div class="appbar__menu" id="userMenu" hidden>
+          <div class="appbar__menu__hd"><b>管理员</b>admin@pengzhi.internal</div>
+          <button class="appbar__menu__item" type="button">个人中心</button>
+          <button class="appbar__menu__item" type="button">偏好设置</button>
+          <div class="appbar__menu__sep"></div>
+          <button class="appbar__menu__item danger" id="btnLogout" type="button">退出登录</button>
+        </div>
+      </div>
+    </header>
+
+    <div class="appbody">
+      <nav class="sidenav">
+        <div class="sidenav__group">工作台</div>
+        <a class="sidenav__link is-active" data-nav="overview" href="overview.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+          概览
+        </a>
+        <a class="sidenav__link" data-nav="chat" href="chat.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          智能问答
+        </a>
+        <a class="sidenav__link" data-nav="import" href="import.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3v5h5"/><path d="M15 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M12 18v-6M9.5 14.5 12 12l2.5 2.5"/></svg>
+          文档导入
+        </a>
+        <div class="sidenav__foot"><b>鹏至智库</b><br>企业知识中枢 v1.0.0</div>
+      </nav>
+
+      <div class="appmain">
+        <div class="content">
+        <div class="page-head">
+          <div class="page-head__icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M4 5c0 1.66 3.58 3 8 3s8-1.34 8-3-3.58-3-8-3-8 1.34-8 3z"/>
+              <path d="M4 5v6c0 1.66 3.58 3 8 3s8-1.34 8-3V5"/>
+              <path d="M4 11v6c0 1.66 3.58 3 8 3s8-1.34 8-3v-6"/>
+            </svg>
+          </div>
+          <div class="page-head__text">
+            <h1>知识概览</h1>
+            <p class="page-head__sub">企业知识库运行态势与资产分布一览（实时统计）</p>
+          </div>
+        </div>
+
+        <div id="statsBanner" class="stats-banner" hidden></div>
+
+        <div class="stat-grid">
+          <div class="stat">
+            <div class="stat__ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg></div>
+            <div class="stat__val" id="stat-total">—</div>
+            <div class="stat__label">文档总数</div>
+            <div class="stat__trend" id="stat-total-trend">加载中…</div>
+          </div>
+          <div class="stat">
+            <div class="stat__ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="M22 4 12 14.01l-3-3"/></svg></div>
+            <div class="stat__val" id="stat-chunks">—</div>
+            <div class="stat__label">知识切片（已向量化）</div>
+            <div class="stat__trend" id="stat-chunks-trend">加载中…</div>
+          </div>
+          <div class="stat">
+            <div class="stat__ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg></div>
+            <div class="stat__val" id="stat-processing">—</div>
+            <div class="stat__label">处理中</div>
+            <div class="stat__trend down" id="stat-processing-trend">加载中…</div>
+          </div>
+          <div class="stat">
+            <div class="stat__ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/><path d="M3 12c0 1.66 4 3 9 3s9-1.34 9-3"/></svg></div>
+            <div class="stat__val" id="stat-storage">—</div>
+            <div class="stat__label">存储用量</div>
+            <div class="stat__trend" id="stat-storage-trend">加载中…</div>
+          </div>
+        </div>
+
+        <div class="grid-2">
+          <section class="panel">
+            <h3 class="panel__title">最近导入 <small>近 6 条</small>
+              <button class="panel__refresh" id="refreshStats" type="button" title="刷新统计">↻</button>
+            </h3>
+            <table class="tbl">
+              <thead>
+                <tr><th>文档名称</th><th>类型</th><th>大小</th><th>状态</th><th>更新时间</th></tr>
+              </thead>
+              <tbody id="recent-list">
+                <tr><td colspan="5" style="color:var(--muted)">加载中…</td></tr>
+              </tbody>
+            </table>
+          </section>
+
+          <section class="panel">
+            <h3 class="panel__title">文档类型分布 <small>按格式</small></h3>
+            <div class="donut-wrap">
+              <div class="donut" id="dist-donut">
+                <div class="donut__center"><b id="dist-total">0</b><span>篇文档</span></div>
+              </div>
+              <div class="legend" id="dist-legend"></div>
+            </div>
+            <div id="dist-foot" style="margin-top:16px;color:var(--muted);font-size:12px">数据更新中…</div>
+          </section>
+        </div>
+      </div>
+    </div>
+    </div>
+
+    <footer class="appfoot">
+      <span class="appfoot__env">内部系统 · 测试环境</span>
+      <span>© 2026 鹏至智库 · 企业知识中枢</span>
+      <span class="appfoot__links">
+        <a href="#">帮助中心</a>
+        <a href="#">隐私政策</a>
+        <a href="#">服务状态</a>
+      </span>
+      <span class="appfoot__ver">v1.0.0+20261013</span>
+    </footer>
+  </div>
+
+  <script>
+    // 概览页统计：从导入服务 /stats 拉取真实指标并渲染（替换原写死 mock）。
+    (function () {
+      var API = (window.KB_SERVICES && window.KB_SERVICES.import) || "http://127.0.0.1:8100";
+      var banner = document.getElementById('statsBanner');
+
+      function fmtTime(ts) {
+        if (!ts) return '—';
+        var d = new Date(ts * 1000);
+        function p(n){ return (n < 10 ? '0' : '') + n; }
+        return (d.getMonth() + 1) + '-' + p(d.getDate()) + ' ' + p(d.getHours()) + ':' + p(d.getMinutes());
+      }
+      function showError(msg) {
+        if (!banner) return;
+        banner.hidden = false;
+        banner.textContent = '⚠ 统计加载失败：' + msg + '（请确认导入服务 ' + API + ' 正在运行）';
+      }
+      function setText(id, v) { var el = document.getElementById(id); if (el) el.textContent = v; }
+      function escapeHtml(s) {
+        return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+          return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c];
+        });
+      }
+      // 类型彩色 chip：颜色取自前端 PALETTE（与「文档类型分布」环形图配色统一），
+      // 通过 CSS 变量 --c 注入，未命中时回退中性灰。
+      function typeChip(t) {
+        var color = PALETTE[t] || '#8a9ab0';
+        return '<span class="type-chip" style="--c:' + color + '">' + escapeHtml(t || '—') + '</span>';
+      }
+
+      var PALETTE = { 'PDF':'#d05a4f','Markdown':'#36a878','Word':'#2f6fb0','DOC':'#2f6fb0','DOCX':'#2f6fb0','Excel':'#2c8f66','XLS':'#2c8f66','PPT':'#c2872f','其他':'#8a9ab0' };
+
+      function render(data) {
+        if (!data || data.error) { showError(data && data.error ? data.error : '未知错误'); return; }
+        if (banner) banner.hidden = true;
+
+        var total = data.total_docs || 0;
+        var completed = data.completed_docs || 0;
+        var chunks = data.total_chunks || 0;
+        setText('stat-total', total);
+        setText('stat-total-trend', '已解析 ' + completed + ' 篇');
+        setText('stat-chunks', chunks);
+        var cov = total > 0 ? Math.round(completed / total * 100) : 0;
+        setText('stat-chunks-trend', '▲ 完成率 ' + cov + '%');
+        setText('stat-processing', data.processing || 0);
+        var pt = document.getElementById('stat-processing-trend');
+        if ((data.processing || 0) > 0) { setText('stat-processing-trend', '● 正在处理'); pt.classList.remove('down'); }
+        else { setText('stat-processing-trend', '● 队列正常'); pt.classList.add('down'); }
+        setText('stat-storage', data.storage || '—');
+        setText('stat-storage-trend', 'doc/ 目录占用');
+
+        // 最近导入（表格）
+        var recent = Array.isArray(data.recent) ? data.recent : [];
+        var rl = document.getElementById('recent-list');
+        if (recent.length === 0) {
+          rl.innerHTML = '<tr><td colspan="5" style="color:var(--muted)">暂无导入记录</td></tr>';
+        } else {
+          rl.innerHTML = recent.map(function (d) {
+            var badge = d.completed
+              ? '<span class="badge done">已完成</span>'
+              : '<span class="badge wait">待处理</span>';
+            return '<tr>'
+              + '<td><div class="doc-name" title="' + escapeHtml(d.name) + '">' + escapeHtml(d.name) + '</div></td>'
+              + '<td>' + typeChip(d.type) + '</td>'
+              + '<td class="mono">' + escapeHtml(d.size || '—') + '</td>'
+              + '<td>' + badge + '</td>'
+              + '<td class="mono">' + fmtTime(d.mtime) + '</td>'
+              + '</tr>';
+          }).join('');
+        }
+
+        // 文档类型分布（环形图 + 图例）
+        var dist = data.type_distribution || {};
+        var keys = Object.keys(dist);
+        var sum = keys.reduce(function (a, k) { return a + (dist[k] || 0); }, 0);
+        var donut = document.getElementById('dist-donut');
+        var legend = document.getElementById('dist-legend');
+        setText('dist-total', total);
+        if (sum === 0) {
+          donut.style.background = '#e6ebf2';
+          legend.innerHTML = '<div class="legend__row" style="color:var(--muted)">暂无数据</div>';
+        } else {
+          var stops = [], acc = 0;
+          keys.forEach(function (k) {
+            var pct = Math.round(dist[k] / sum * 100);
+            var color = PALETTE[k] || '#8a9ab0';
+            stops.push(color + ' ' + acc + '% ' + (acc + pct) + '%');
+            acc += pct;
+          });
+          donut.style.background = 'conic-gradient(' + stops.join(',') + ')';
+          legend.innerHTML = keys.map(function (k) {
+            var color = PALETTE[k] || '#8a9ab0';
+            return '<div class="legend__row"><span class="legend__dot" style="background:' + color + '"></span>'
+              + '<span class="legend__name">' + escapeHtml(k) + '</span>'
+              + '<span class="legend__val">' + dist[k] + '</span></div>';
+          }).join('');
+        }
+        var foot = document.getElementById('dist-foot');
+        if (foot) foot.textContent = '数据更新于 ' + (data.updated_at || '—') + ' · 共 ' + total + ' 篇文档';
+      }
+
+      function load() {
+        fetch(API + '/stats', { cache: 'no-store' })
+          .then(function (r) { return r.json(); })
+          .then(render)
+          .catch(function (e) { showError(e.message || String(e)); });
+      }
+
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', load);
+      } else { load(); }
+
+      var btn = document.getElementById('refreshStats');
+      if (btn) btn.addEventListener('click', load);
+      setInterval(load, 30000);
+    })();
+  </script>
+</body>
+</html>

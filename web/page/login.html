@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+  <title>登录 · 鹏至智库</title>
+  <!-- 复用主题设计令牌（CSS 变量），保证与系统内页视觉一致 -->
+  <link rel="stylesheet" href="assets/css/theme.css?v=20261013" />
+  <link rel="stylesheet" href="assets/css/login.css?v=20261013" />
+  <!-- 主题防闪烁：与全站一致，登录页默认浅色，避免深色/浅色切换瞬间白闪 -->
+  <script>
+    (function(){
+      try{
+        if(localStorage.getItem('kb_theme')==='dark') document.documentElement.setAttribute('data-theme','dark');
+      }catch(e){}
+    })();
+  </script>
+</head>
+<body class="login-page">
+  <div class="login-wrap">
+    <!-- 左侧品牌区：深蓝渐变 + 金色点缀，与全站应用栏同源 -->
+    <aside class="login-hero">
+      <div class="login-hero__brand">
+        <span class="login-hero__logo">鹏</span>
+        <div>
+          <div class="login-hero__name">鹏至智库</div>
+          <div class="login-hero__tag">企业知识中枢</div>
+        </div>
+      </div>
+      <h1 class="login-hero__title">让每一份企业资料<br>都能被检索、被用起来</h1>
+      <ul class="login-hero__feats">
+        <li>汇聚文档、制度与知识资产，一键导入</li>
+        <li>基于企业文档的自然语言问答与溯源</li>
+        <li>知识规模、类型分布与动态全貌洞察</li>
+      </ul>
+      <div class="login-hero__env">内部系统 · 测试环境</div>
+    </aside>
+
+    <!-- 右侧登录卡片 -->
+    <main class="login-card">
+      <div class="login-card__head">
+        <h2>欢迎登录</h2>
+        <p>请输入您的企业账号以继续使用</p>
+      </div>
+
+      <form id="loginForm" class="login-form" autocomplete="off">
+        <label class="login-field" id="fieldUser">
+          <span class="login-field__label">邮箱</span>
+          <span class="login-field__box">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg>
+            <input id="user" type="email" placeholder="请输入登录邮箱" autocomplete="username" />
+          </span>
+          <span class="login-field__err" id="errUser" hidden></span>
+        </label>
+
+        <label class="login-field" id="fieldPass">
+          <span class="login-field__label">密码</span>
+          <span class="login-field__box">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>
+            <input id="pass" type="password" placeholder="请输入密码" autocomplete="current-password" />
+            <button type="button" id="togglePass" class="login-field__eye" aria-label="显示密码">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
+            </button>
+          </span>
+          <span class="login-field__err" id="errPass" hidden></span>
+        </label>
+
+        <div class="login-row">
+          <label class="login-remember">
+            <input id="remember" type="checkbox" checked /> 记住我
+          </label>
+          <a class="login-link" href="#" id="forgot">忘记密码？</a>
+        </div>
+
+        <div class="login-err" id="loginErr" hidden></div>
+
+        <button type="submit" class="login-submit" id="submitBtn">
+          <span class="login-submit__txt">登 录</span>
+          <span class="login-submit__spinner" aria-hidden="true"></span>
+        </button>
+      </form>
+
+      <div class="login-divider"><span>或使用企业账号登录</span></div>
+      <div class="login-sso">
+        <button type="button" class="sso-btn" data-sso="企业微信">企业微信</button>
+        <button type="button" class="sso-btn" data-sso="钉钉">钉钉</button>
+        <button type="button" class="sso-btn" data-sso="SSO">SSO 单点登录</button>
+      </div>
+
+      <div class="login-foot login-foot--entry">还没有账号？<a class="login-link" href="/register.html?v=20261013">注册账号</a></div>
+
+      <div class="login-foot">© 2026 鹏至智库 · 企业知识中枢 v1.0.0+20261013</div>
+    </main>
+  </div>
+
+  <script>
+    // 登录页逻辑（前端演示，无后端账号校验；仅做会话态登记与跳转）
+    (function () {
+      var SERVICES = window.KB_SERVICES || { import: "http://127.0.0.1:8100" };
+      var VER = "20261013";
+
+      // 读取当前登录态（localStorage / sessionStorage 任一存在即可）
+      function getLogin() {
+        try { return localStorage.getItem('kb_logged_in') || sessionStorage.getItem('kb_logged_in'); }
+        catch (e) { return null; }
+      }
+      function go(url) { location.href = url; }
+      // 演示用：明文密码做轻量编码（非加密，仅避免直接明文暴露；禁用于生产）
+      function enc(p) { return btoa(unescape(encodeURIComponent(p))); }
+      function getAccounts() {
+        try { return JSON.parse(localStorage.getItem('kb_accounts') || '[]'); }
+        catch (e) { return []; }
+      }
+
+      var params = new URLSearchParams(location.search);
+      var next = params.get('next');
+
+      // 已登录：直接进入（保留 ?next= 目标页，否则回门户）
+      if (getLogin()) {
+        go(next ? next : (SERVICES.import + "/?v=" + VER));
+        return;
+      }
+
+      var form = document.getElementById('loginForm');
+      var userEl = document.getElementById('user');
+      var passEl = document.getElementById('pass');
+      var errEl = document.getElementById('loginErr');
+      var toggle = document.getElementById('togglePass');
+      var remember = document.getElementById('remember');
+      var forgot = document.getElementById('forgot');
+      var submitBtn = document.getElementById('submitBtn');
+      var fieldUser = document.getElementById('fieldUser');
+      var fieldPass = document.getElementById('fieldPass');
+      var errUser = document.getElementById('errUser');
+      var errPass = document.getElementById('errPass');
+
+      var EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+      // 字段级错误：在对应输入框下方红字提示，并给输入框加红色高亮
+      function setFieldError(field, span, msg) { field.classList.add('is-error'); span.textContent = msg; span.hidden = false; }
+      function clearFieldError(field, span) { field.classList.remove('is-error'); span.hidden = true; span.textContent = ''; }
+
+      // 校验邮箱格式 + 密码非空且 >=6 位；返回是否通过
+      function validate() {
+        var ok = true;
+        var u = (userEl.value || '').trim();
+        var p = passEl.value || '';
+        if (!u) { setFieldError(fieldUser, errUser, '请输入邮箱'); ok = false; }
+        else if (!EMAIL_RE.test(u)) { setFieldError(fieldUser, errUser, '邮箱格式不正确'); ok = false; }
+        else { clearFieldError(fieldUser, errUser); }
+        if (!p) { setFieldError(fieldPass, errPass, '请输入密码'); ok = false; }
+        else if (p.length < 6) { setFieldError(fieldPass, errPass, '密码至少 6 位'); ok = false; }
+        else { clearFieldError(fieldPass, errPass); }
+        return ok;
+      }
+
+      // 输入即清错；邮箱失焦即时校验格式
+      userEl.addEventListener('input', function () { clearFieldError(fieldUser, errUser); errEl.hidden = true; });
+      passEl.addEventListener('input', function () { clearFieldError(fieldPass, errPass); errEl.hidden = true; });
+      userEl.addEventListener('blur', function () {
+        var u = (userEl.value || '').trim();
+        if (u && !EMAIL_RE.test(u)) setFieldError(fieldUser, errUser, '邮箱格式不正确');
+      });
+
+      // 密码显隐切换
+      toggle.addEventListener('click', function () {
+        var show = passEl.type === 'password';
+        passEl.type = show ? 'text' : 'password';
+        toggle.setAttribute('aria-label', show ? '隐藏密码' : '显示密码');
+      });
+
+      forgot.addEventListener('click', function (e) {
+        e.preventDefault();
+        errEl.textContent = '演示环境：请联系系统管理员重置密码。';
+        errEl.hidden = false;
+      });
+
+      // SSO 演示：仅提示，不实际跳转
+      var ssoBtns = document.querySelectorAll('.sso-btn');
+      ssoBtns.forEach(function (b) {
+        b.addEventListener('click', function () {
+          errEl.textContent = '「' + b.getAttribute('data-sso') + '」登录为演示入口，请使用邮箱/密码登录。';
+          errEl.hidden = false;
+        });
+      });
+
+      // 按钮 loading 态：禁用 + 旋转图标
+      function setLoading(on) { submitBtn.classList.toggle('is-loading', on); submitBtn.disabled = on; }
+
+      form.addEventListener('submit', function (e) {
+        e.preventDefault();
+        errEl.hidden = true;
+        if (!validate()) return;
+
+        var u = (userEl.value || '').trim();
+        var p = passEl.value || '';
+
+        setLoading(true);
+        // 演示用：轻微延迟模拟鉴权网络往返，提升真实感
+        setTimeout(function () {
+          // 校验：若系统中已存在注册账号，则必须邮箱+密码匹配；否则（演示环境）放行任意账号
+          var matchedName = '';
+          var accounts = getAccounts();
+          if (accounts.length > 0) {
+            var hit = null;
+            for (var i = 0; i < accounts.length; i++) { if (accounts[i].email === u) { hit = accounts[i]; break; } }
+            if (!hit || hit.pass !== enc(p)) {
+              setLoading(false);
+              setFieldError(fieldPass, errPass, '邮箱或密码错误');
+              return;
+            }
+            matchedName = hit.name || '';
+          }
+          // 登记会话态：记住我 -> 持久化；否则仅当前会话有效
+          var payload = JSON.stringify({ user: u, name: matchedName, ts: Date.now() });
+          try {
+            if (remember.checked) localStorage.setItem('kb_logged_in', payload);
+            else sessionStorage.setItem('kb_logged_in', payload);
+          } catch (e) {}
+          setLoading(false);
+          go(next ? next : (SERVICES.import + "/?v=" + VER));
+        }, 600);
+      });
+    })();
+  </script>
+</body>
+</html>

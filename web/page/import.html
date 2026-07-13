@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate, max-age=0">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <title>文件导入服务</title>
+    <link rel="stylesheet" href="assets/css/theme.css?v=20261013">
+  <link rel="stylesheet" href="assets/css/import.css?v=20261013">
+  <script src="assets/js/app-config.js?v=20261012"></script>
+  <script>
+  /* 主题防闪烁：在 <body> 绘制前根据 localStorage 预设 data-theme */
+  (function(){
+    var STORE='kb_theme';
+    function getTheme(){ return document.documentElement.getAttribute('data-theme')==='dark' ? 'dark' : 'light'; }
+    function setTheme(t){
+      if(t==='dark') document.documentElement.setAttribute('data-theme','dark');
+      else document.documentElement.removeAttribute('data-theme');
+      try{ localStorage.setItem(STORE,t); }catch(e){}
+    }
+    try{ if(localStorage.getItem(STORE)==='dark') document.documentElement.setAttribute('data-theme','dark'); }catch(e){}
+    function toggleTheme(){ setTheme(getTheme()==='dark' ? 'light' : 'dark'); }
+    document.addEventListener('DOMContentLoaded',function(){
+      var b=document.getElementById('themeToggle');
+      if(b){
+        b.addEventListener('click', function(e){ e.preventDefault(); toggleTheme(); });
+        b.addEventListener('keydown', function(e){ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); toggleTheme(); } });
+      }
+    });
+    window.__toggleTheme = toggleTheme;
+  })();
+  </script>
+</head>
+<body>
+  <div class="appshell">
+    <!-- 顶部应用栏（全站统一） -->
+    <header class="appbar">
+      <a class="appbar__brand" href="/" data-nav="portal" title="返回首页">
+        <span class="appbar__logo">鹏</span>
+        <span class="appbar__name">鹏至智库</span>
+        <span class="appbar__tag">企业知识中枢</span>
+      </a>
+      <div class="appbar__tools">
+        <div class="appbar__search">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+          <input type="text" placeholder="搜索知识库、文档、问答…" aria-label="搜索">
+        </div>
+        <button class="appbar__bell" type="button" title="通知" aria-label="通知">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>
+          <span class="appbar__dot"></span>
+        </button>
+        <button class="theme-toggle" id="themeToggle" type="button" title="切换浅色/深色" aria-label="切换浅色/深色">
+          <svg class="ic-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+          <svg class="ic-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
+        </button>
+        <button class="appbar__user" id="userBtn" type="button" title="账户">
+          <span class="appbar__avatar">鹏</span>
+          <span class="appbar__uname">管理员</span>
+          <svg class="caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+        </button>
+        <div class="appbar__menu" id="userMenu" hidden>
+          <div class="appbar__menu__hd"><b>管理员</b>admin@pengzhi.internal</div>
+          <button class="appbar__menu__item" type="button">个人中心</button>
+          <button class="appbar__menu__item" type="button">偏好设置</button>
+          <div class="appbar__menu__sep"></div>
+          <button class="appbar__menu__item danger" id="btnLogout" type="button">退出登录</button>
+        </div>
+      </div>
+    </header>
+
+    <div class="appbody">
+      <nav class="sidenav">
+        <div class="sidenav__group">工作台</div>
+        <a class="sidenav__link" data-nav="overview" href="overview.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+          概览
+        </a>
+        <a class="sidenav__link" data-nav="chat" href="chat.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          智能问答
+        </a>
+        <a class="sidenav__link is-active" data-nav="import" href="import.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3v5h5"/><path d="M15 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M12 18v-6M9.5 14.5 12 12l2.5 2.5"/></svg>
+          文档导入
+        </a>
+        <div class="sidenav__foot"><b>鹏至智库</b><br>企业知识中枢 v1.0.0</div>
+      </nav>
+
+      <div class="appmain">
+      <div class="container">
+        <div class="page-head">
+          <div class="page-head__icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M4 5c0 1.66 3.58 3 8 3s8-1.34 8-3-3.58-3-8-3-8 1.34-8 3z"/>
+              <path d="M4 5v6c0 1.66 3.58 3 8 3s8-1.34 8-3V5"/>
+              <path d="M4 11v6c0 1.66 3.58 3 8 3s8-1.34 8-3v-6"/>
+            </svg>
+          </div>
+          <div class="page-head__text">
+            <h1>知识库文件导入</h1>
+            <p class="page-head__sub">上传 PDF / Markdown 文档，构建属于你的企业知识库</p>
+          </div>
+        </div>
+
+        <!-- 后端连通性提示条 -->
+        <div id="apiBanner" class="api-banner" hidden></div>
+
+        <div class="upload-area" id="dropZone" onclick="document.getElementById('fileInput').click()">
+            <div class="upload-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M16 16l-4-4-4 4"/>
+                <path d="M12 12v9"/>
+                <path d="M20.4 16.6A4.5 4.5 0 0 0 18 8h-1.3A7 7 0 1 0 4 14.9"/>
+              </svg>
+            </div>
+            <p>点击或拖拽文件到此处</p>
+            <span class="upload-btn">选择文件</span>
+            <div class="upload-tip">支持格式：PDF / Markdown（.md）/ Word（.docx）</div>
+            <input type="file" id="fileInput" class="file-input" multiple accept=".pdf,.md,.docx">
+        </div>
+
+        <div class="file-head">
+          <span>文档</span>
+          <span>类型</span>
+          <span>更新时间</span>
+          <span>操作人</span>
+          <span>状态</span>
+          <span>操作</span>
+        </div>
+        <div id="fileList" class="file-list">
+            <!-- 文件列表将在这里生成 -->
+        </div>
+      </div>
+    </div>
+    </div>
+
+    <footer class="appfoot">
+      <span class="appfoot__env">内部系统 · 测试环境</span>
+      <span>© 2026 鹏至智库 · 企业知识中枢</span>
+      <span class="appfoot__links">
+        <a href="#">帮助中心</a>
+        <a href="#">隐私政策</a>
+        <a href="#">服务状态</a>
+      </span>
+      <span class="appfoot__ver">v1.0.0+20261013</span>
+    </footer>
+  </div>
+
+<script>
+    const dropZone = document.getElementById('dropZone');
+    const fileInput = document.getElementById('fileInput');
+    const fileList = document.getElementById('fileList');
+
+    // 后端基地址：从全局配置读取导入服务地址（与 .env 的 KB_PORT_IMPORT=8100 一致）。
+    const API_BASE = window.KB_SERVICES.import;
+
+    dropZone.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        dropZone.style.backgroundColor = '#ecf6fd';
+    });
+
+    dropZone.addEventListener('dragleave', (e) => {
+        e.preventDefault();
+        dropZone.style.backgroundColor = '';
+    });
+
+    dropZone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        dropZone.style.backgroundColor = '';
+        handleFiles(e.dataTransfer.files);
+    });
+
+    fileInput.addEventListener('change', (e) => {
+        handleFiles(e.target.files);
+    });
+
+    function handleFiles(files) {
+        Array.from(files).forEach(uploadFile);
+    }
+
+    function fileExt(name){
+      const m = String(name||'').split('.');
+      return (m.length > 1 ? m.pop() : '').toUpperCase();
+    }
+
+    // 读取当前登录用户作为「操作人」：昵称优先，回退邮箱；未登录则显示「未登录」
+    function getCurrentOperator() {
+      try {
+        const raw = localStorage.getItem('kb_logged_in') || sessionStorage.getItem('kb_logged_in');
+        if (!raw) return '未登录';
+        const info = JSON.parse(raw);
+        return (info.name && String(info.name).trim()) || info.user || '未登录';
+      } catch (e) { return '未登录'; }
+    }
+
+    function updateProgressBar(bar, percentage) {
+        bar.style.width = percentage + '%';
+        if (percentage >= 100) {
+            bar.style.backgroundColor = '#3498db';
+        } else {
+            bar.style.backgroundColor = '#f39c12';
+        }
+    }
+
+    async function uploadFile(file) {
+        const id = 'file-' + Math.random().toString(36).substr(2, 9);
+        const ext = fileExt(file.name);
+        const operator = getCurrentOperator();
+        const html = `
+            <div class="file-item" id="${id}">
+                <div class="file-info">
+                    <span class="file-name">${file.name}</span>
+                    <span class="file-size">${(file.size / 1024).toFixed(2)} KB</span>
+                    <div class="progress-bar-container">
+                        <div class="progress-bar"></div>
+                    </div>
+                    <details class="log-details">
+                        <summary>日志（点击展开）</summary>
+                        <ul class="log-list"></ul>
+                    </details>
+                </div>
+                <div class="file-type">${ext || '—'}</div>
+                <div class="file-time">刚刚</div>
+                <div class="file-operator" title="${operator}">${operator}</div>
+                <div class="file-status"><div class="status-badge status-uploading">上传中...</div></div>
+                <div class="file-act"></div>
+            </div>
+        `;
+        fileList.insertAdjacentHTML('afterbegin', html);
+        const itemEl = document.getElementById(id);
+        const statusBadge = itemEl.querySelector('.status-badge');
+        const progressBar = itemEl.querySelector('.progress-bar');
+        const progressContainer = itemEl.querySelector('.progress-bar-container');
+
+        const formData = new FormData();
+        formData.append('files', file);
+
+        try {
+            progressContainer.style.display = 'block';
+            updateProgressBar(progressBar, 50);
+
+            let response;
+            try {
+                response = await fetch(`${API_BASE}/upload`, {
+                    method: 'POST',
+                    body: formData
+                });
+            } catch (netErr) {
+                throw new Error(
+                    `无法连接后端导入服务 ${API_BASE}（${netErr.message}）。` +
+                    `请确认已在项目根目录执行 python main.py 启动服务，并确保 ${API_BASE} 正在监听。`
+                );
+            }
+
+            if (!response.ok) {
+                let detail = '';
+                try { detail = await response.text(); } catch (_) { }
+                throw new Error(
+                    `服务返回 HTTP ${response.status} ${response.statusText}` +
+                    (detail ? `：${detail.slice(0, 500)}` : '')
+                );
+            }
+
+            let result;
+            try {
+                result = await response.json();
+            } catch (jsonErr) {
+                throw new Error(`服务响应不是合法 JSON，可能连到了非本项目的服务：${jsonErr.message}`);
+            }
+
+            if (!result || !Array.isArray(result.task_ids) || result.task_ids.length === 0) {
+                throw new Error(`服务未返回 task_ids，响应内容：${JSON.stringify(result).slice(0, 500)}`);
+            }
+
+            const taskId = result.task_ids[0];
+            updateProgressBar(progressBar, 30);
+            statusBadge.textContent = '处理中...';
+            statusBadge.className = 'status-badge status-processing';
+            pollStatus(taskId, itemEl);
+
+        } catch (error) {
+            console.error(error);
+            statusBadge.textContent = '失败';
+            statusBadge.className = 'status-badge status-error';
+            renderErrorLog(itemEl, error && error.message ? error.message : String(error));
+        }
+    }
+
+    function normalizeDoneLog(text) {
+        if (typeof text !== 'string') return String(text);
+        return text.endsWith('已完成') ? text : `${text}已完成`;
+    }
+
+    function normalizeRunningLog(text) {
+        if (typeof text !== 'string') return String(text);
+        if (text.startsWith('正在进行')) return text.endsWith('...') ? text : `${text}...`;
+        return `正在进行${text}...`;
+    }
+
+    function renderLogs(itemEl, doneList, runningList) {
+        const logSummary = itemEl.querySelector('.log-details summary');
+        const logListEl = itemEl.querySelector('.log-list');
+        const logDetails = itemEl.querySelector('.log-details');
+
+        const done = Array.isArray(doneList) ? doneList : [];
+        const running = Array.isArray(runningList) ? runningList : [];
+
+        logSummary.textContent = `日志（已完成${done.length}，进行中${running.length}，点击展开）`;
+
+        logListEl.innerHTML = '';
+        const lines = [
+            ...done.map(normalizeDoneLog),
+            ...running.map(normalizeRunningLog),
+        ];
+
+        if (lines.length === 0) {
+            const li = document.createElement('li');
+            li.textContent = '暂无日志';
+            logListEl.appendChild(li);
+        } else {
+            for (const line of lines) {
+                const li = document.createElement('li');
+                li.textContent = line;
+                logListEl.appendChild(li);
+            }
+        }
+
+        if (lines.length === 0) {
+            logDetails.open = false;
+        }
+    }
+
+    function renderErrorLog(itemEl, message) {
+        const logSummary = itemEl.querySelector('.log-details summary');
+        const logListEl = itemEl.querySelector('.log-list');
+        const logDetails = itemEl.querySelector('.log-details');
+        if (!logSummary || !logListEl) return;
+        logSummary.textContent = '日志（失败原因，点击收起）';
+        logListEl.innerHTML = '';
+        const li = document.createElement('li');
+        li.textContent = message;
+        li.style.color = '#c0392b';
+        li.style.wordBreak = 'break-all';
+        logListEl.appendChild(li);
+        if (logDetails) logDetails.open = true;
+    }
+
+    function pollStatus(taskId, itemEl) {
+        const statusBadge = itemEl.querySelector('.status-badge');
+        const progressBar = itemEl.querySelector('.progress-bar');
+        const timeEl = itemEl.querySelector('.file-time');
+
+        const interval = setInterval(async () => {
+            try {
+                const res = await fetch(`${API_BASE}/status/${taskId}`);
+                const data = await res.json();
+                renderLogs(itemEl, data.done_list, data.running_list);
+                if (timeEl) timeEl.textContent = new Date().toLocaleTimeString('zh-CN', {hour:'2-digit', minute:'2-digit'});
+
+                if (data.status === 'completed') {
+                    statusBadge.textContent = '已完成';
+                    statusBadge.className = 'status-badge status-completed';
+                    updateProgressBar(progressBar, 100);
+                    clearInterval(interval);
+                } else if (data.status === 'processing') {
+                    statusBadge.textContent = '处理中...';
+                    updateProgressBar(progressBar, 30);
+                } else if (data.status === 'failed') {
+                    statusBadge.textContent = '失败';
+                    statusBadge.className = 'status-badge status-error';
+                    renderErrorLog(itemEl, '后端处理失败：' + (data.error || '（后端未返回详细原因，请查看服务端日志）'));
+                    clearInterval(interval);
+                }
+            } catch (e) {
+                console.error('Polling error', e);
+            }
+        }, 2000);
+    }
+
+    (async function checkBackend() {
+        const banner = document.getElementById('apiBanner');
+        try {
+            const r = await fetch(`${API_BASE}/health`, { cache: 'no-store' });
+            if (!r.ok) throw new Error('HTTP ' + r.status);
+            if (banner) banner.hidden = true;
+        } catch (e) {
+            if (banner) {
+                banner.hidden = false;
+                banner.textContent = `⚠ 未能连接后端导入服务（${API_BASE}，${e.message}）。请在项目根目录执行 python main.py 启动服务后再导入。`;
+            }
+            console.warn('后端导入服务探活失败：', e);
+        }
+    })();
+</script>
+
+</body>
+</html>

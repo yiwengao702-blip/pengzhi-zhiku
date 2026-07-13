@@ -7,7 +7,7 @@ from processor.import_processor.exceptions import ImportProcessError
 
 # --- 定义测试节点 (继承 BaseNode) ---
 class TestNode(BaseNode):
-    name = "test_node"  # 覆盖基类的 name
+    name = "向量化节点"  # 覆盖基类的 name
 
     def process(self, state: Dict) -> Dict:
         """

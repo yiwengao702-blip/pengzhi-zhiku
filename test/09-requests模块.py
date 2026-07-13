@@ -1,6 +1,7 @@
 import requests
 
 response = requests.get("https://api.github.com/users/octocat")
+
 print(response.json())
 
 if response.status_code == 200:
