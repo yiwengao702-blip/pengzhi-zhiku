@@ -22,3 +22,9 @@ _deleted_backup/
 *.zip
 knowledge_base.zip
 config.zip
+
+# 本地文档语料库（保留本地，不入库）
+doc/
+
+# 临时空文件
+1.3.3
