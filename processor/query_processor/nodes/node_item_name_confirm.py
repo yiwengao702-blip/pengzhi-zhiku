@@ -5,7 +5,6 @@ import re
 from typing import Tuple, Dict, List
 
 from langchain_core.messages import SystemMessage, HumanMessage
-from langchain_openai import ChatOpenAI
 
 from config.lm_config import lm_config
 from config.milvus_config import milvus_config
@@ -19,6 +18,8 @@ from utils.embedding_utils import generate_embeddings
 from utils.milvus_utils import get_milvus_client, create_hybrid_search_requests, hybrid_search
 from utils.mongo_history_utils import save_chat_message, get_recent_messages, update_message_item_names
 from utils.task_utils import add_done_task
+# [融合] 文本 LLM 收敛到共享底座网关（R5），商品名抽取属于纯文本路径，不再直连 ChatOpenAI
+from utils.llm_utils import get_llm_client
 
 
 class NodeItemNameConfirm(NodeBase):
@@ -36,22 +37,27 @@ class NodeItemNameConfirm(NodeBase):
         :return: 更新后的状态对象
         """
 
-        # 步骤1：校验参数
-        # 经过校验以后  原始问题和session_id 会话ID
-        session_id, original_query = self._step_1_validate_param(state)
-        logger.info(f"步骤1：参数校验通过")
-
-        # [P0-方案4] 异常/边界输入守卫：空白、超长、纯标点、广告等直接友好提示，不进入检索链路
+        # 步骤0（前置）：先校验 session_id，再对原始问题做边界守卫。
+        # [BUG修复] 原实现先调用 _step_1_validate_param（空/缺失 original_query 会直接 raise），
+        # 导致下方输入守卫永远来不及拦截空/垃圾输入而抛异常，破坏边界健壮性。
+        # 现把守卫前置：空、超长、纯标点、广告等边界输入由守卫直接给友好提示，不进入检索链路与参数校验。
+        session_id = state.get("session_id")
+        if not session_id:
+            raise ValueError("核心参数session_id缺失")
         guard_msg = self._step_0_guard_query(state)
         if guard_msg:
             logger.info(f"步骤0：输入守卫拦截，提示={guard_msg}")
             # 仍记录用户消息与助手提示，保证历史连贯
-            message_id = save_chat_message(session_id, "user", original_query)
+            message_id = save_chat_message(session_id, "user", state.get("original_query") or "")
             state["answer"] = guard_msg
             state["item_names"] = []
-            self._step_8_write_history(state, session_id, original_query, message_id)
-            add_done_task(state.get("session_id"), self.name, state.get("is_stream"))
+            self._step_8_write_history(state, session_id, state.get("original_query") or "", message_id)
+            add_done_task(session_id, self.name, state.get("is_stream"))
             return state
+
+        # 步骤1：校验参数（守卫已确保 original_query 非空，此处不会再因空查询抛异常）
+        session_id, original_query = self._step_1_validate_param(state)
+        logger.info(f"步骤1：参数校验通过")
 
         # 步骤2：获取历史记录  校验完了 你有原始问题 和会话ID  我先MongoDB 找历史记录
         history = get_recent_messages(session_id)  # 根据你提供的会话ID 去Mongo找历史记录
@@ -75,7 +81,7 @@ class NodeItemNameConfirm(NodeBase):
 
         # 5. & 6. 型号对齐（仅在「需要确认型号」且「提取到型号」时执行）
         # [P1-方案5] 通用问题短路：need_item_confirm=False 表示问题与具体型号无关
-        # （如"短路怎么查""万用表怎么测电压""茶叶怎么保存"），直接清空 item_names 走全库检索，
+        # （如"短路怎么查""万用表怎么测电压""U盘怎么格式化"），直接清空 item_names 走全库检索，
         # 跳过无谓的 kb_item_names 向量对齐查询，降低延迟与误拒率。
         align_result = {}
         if need_item_confirm and len(item_names) > 0:
@@ -384,18 +390,11 @@ class NodeItemNameConfirm(NodeBase):
 
         try:
             # 1. 获取llm客户端 商品名称
+            # [融合 R5] 纯文本路径统一走共享网关 SakuraGatewayChatModel，json_mode=True 透传
+            # response_format={"type":"json_object"}，与原 ChatOpenAI 行为一致；模型由 item_model 指定。
             # [兼容性提醒] response_format={"type": "json_object"} 要求 LLM 提供商支持该参数
             # 部分模型（如旧版 DeepSeek）可能忽略此参数，需依赖后续代码块的 JSON 清理逻辑兜底
-            chat_model = ChatOpenAI(
-                model=lm_config.item_model,
-                api_key=lm_config.api_key,
-                base_url=lm_config.base_url,
-                temperature=lm_config.llm_temperature,
-                # 开启JSON标准输出模式，强制模型返回可解析的json_object
-                model_kwargs={
-                    "response_format": {"type": "json_object"}
-                }
-            )
+            chat_model = get_llm_client(model=lm_config.item_model, json_mode=True)
 
             # 2. 构造历史对话文本，拼接为"角色: 内容"的格式，供LLM做上下文理解
             history_text = ""
