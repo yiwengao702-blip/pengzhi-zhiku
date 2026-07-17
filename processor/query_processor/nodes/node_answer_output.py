@@ -3,7 +3,7 @@
 import re
 from typing import List, Dict, Tuple
 
-from processor.query_processor.prompt.answer_prompt import ANSWER_PROMPT
+from processor.query_processor.prompt.answer_prompt import ANSWER_PROMPT, RELEVANCE_JUDGE_PROMPT
 from tool.logger import logger
 
 from processor.query_processor.base import NodeBase
@@ -14,6 +14,31 @@ from utils.sse_utils import push_to_session, SSEEvent
 from utils.task_utils import set_task_result, add_done_task
 
 MAX_CONTEXT_CHARS = 12000
+
+
+def _clean_answer(text: str) -> str:
+    """
+    清洗大模型答案：去除思考过程，只保留最终回答。
+
+    背景：部分推理模型（如 Kimi-K2 / DeepSeek-R1）即便传了 enable_thinking=false，
+    仍可能在输出里携带思考链路，表现为：
+      - 显式包裹的 <think:6124c78e>...</think:6124c78e> 块；
+      - 或未包裹、仅以 </think> 作为「思考结束 / 回答开始」的分界标记，
+        分界前是英文/中文的 reasoning（如 "We need answer user question based on..."）。
+    这些思考内容不应出现在面向用户的答案里，需在落库与推送前剥离。
+    处理顺序：先移除完整 <think:6124c78e>...</think:6124c78e> 块，再丢弃 </think> 之前的全部内容，
+    最后清掉残留的裸标记与首尾空白。
+    """
+    if not text:
+        return text
+    # 1) 移除完整的 <think:6124c78e>...</think:6124c78e> 思考块（DOTALL 跨行匹配）
+    text = re.sub(r"<think:6124c78e>.*?</think:6124c78e>", "", text, flags=re.DOTALL)
+    # 2) 丢弃 </think> 分界标记之前的内容（含标记本身）；取最后一段
+    if "</think>" in text:
+        text = text.split("</think>")[-1]
+    # 3) 清除可能残留的裸 <think> 标记
+    text = re.sub(r"<think>", "", text, flags=re.IGNORECASE)
+    return text.strip()
 
 
 class NodeAnswerOutput(NodeBase):
@@ -45,6 +70,13 @@ class NodeAnswerOutput(NodeBase):
         # 直接给出友好提示，避免 LLM 基于空上下文编造答案。
         if not (state.get("reranked_docs") or []) and not state.get("answer"):
             state["answer"] = "抱歉，未找到相关产品，请提供准确型号以便我为您查询。"
+
+        # [质量闸门] 相关性判定：检索结果非空，但与用户问题语义无关（如问"快排"却召回 Python 术语表）
+        # 时，直接友好拒答，避免 LLM 调用自身知识编造答案。
+        # 仅当 reranked_docs 非空且上游未预置答案时触发；空结果已由上面的 P0 网关处理。
+        if (state.get("reranked_docs") or []) and not state.get("answer"):
+            if not self._step_check_relevance(state):
+                state["answer"] = "抱歉，知识库中未收录与该问题相关的内容，我无法基于现有资料作答。"
 
         # 阶段一：检查answer是否存在,如果存在直接输出answer中的答案
         answer_exists = self._step_1_check_answer(state)
@@ -84,6 +116,40 @@ class NodeAnswerOutput(NodeBase):
 
         logger.info("---node_answer_output 节点处理结束---")
         return state
+
+    def _step_check_relevance(self, state) -> bool:
+        """
+        [质量闸门] 相关性判定：判断 reranked_docs 是否真正包含可作答信息。
+        - 返回 True：相关，走正常 LLM 生成；
+        - 返回 False：不相关，调用方应直接友好拒答，不调用生成模型。
+        判定用一次极廉价的 LLM 调用（仅输出 RELEVANT / NOT_RELEVANT），
+        对"词汇重叠但语义无关"的检索噪声鲁棒，且不依赖 reranker 是否配置。
+        判定失败（异常）时降级为视为相关，交严格提示词兜底，绝不阻断主流程。
+        """
+        docs = state.get("reranked_docs") or []
+        if not docs:
+            return False
+        question = state.get("rewritten_query") or state.get("original_query", "")
+        # 取前 3 条切片正文（截断到 300 字），构造判定上下文，控制 token 成本
+        snippets = []
+        for d in docs[:3]:
+            c = (d.get("content") or "").strip().replace("\n", " ")
+            if c:
+                snippets.append(c[:300])
+        if not snippets:
+            return False
+        ctx = "\n---\n".join(snippets)
+        judge_prompt = RELEVANCE_JUDGE_PROMPT.format(context=ctx, question=question)
+        try:
+            llm = get_llm_client()
+            resp = llm.invoke(judge_prompt)
+            verdict = (getattr(resp, "content", "") or "").strip().upper()
+            relevant = ("NOT_RELEVANT" not in verdict) and ("不相关" not in verdict) and ("无关" not in verdict)
+            logger.info(f"[相关性闸门] 判定={verdict} → 相关={relevant}")
+            return relevant
+        except Exception as e:
+            logger.error(f"[相关性闸门] 判定失败，降级视为相关: {e}")
+            return True
 
     def _step_1_check_answer(self, state) -> bool:
         """
@@ -229,13 +295,41 @@ class NodeAnswerOutput(NodeBase):
         if is_stream:
             logger.info(f"模式: 流式输出 (Streaming), Session: {session_id}")
             final_text = ""
+            _buf = ""
+            _think_open_seen = False  # 本次生成是否真的出现过 <think> 标记（推理模型才有）
+            _in_think = False  # 当前是否处于思考区（已见 <think> 且未见 </think>）
             try:
                 # 使用 stream 方法进行流式生成
                 for chunk in llm.stream(prompt):
                     delta = getattr(chunk, "content", "") or ""
-                    if delta:
+                    if not delta:
+                        continue
+                    _buf += delta
+                    # [BUG修复] 仅在确实出现 <think> 标记时才进入「思考过滤」逻辑。
+                    # 非推理模型（如 Qwen2.5 系列）从不输出 <think>，若默认按「思考中」丢弃，
+                    # 会导致整个答案被吞掉（final_text 为空）。故：未出现 <think> 前一律透传。
+                    if not _think_open_seen:
+                        if "<think>" in _buf:
+                            _think_open_seen = True
+                            _in_think = True
+                            # 该增量内可能同时包含 <think> 之后的内容，按 </think> 是否存在继续判断
+                        else:
+                            # 非推理模型或未进入思考：直接作为最终输出推送
+                            final_text += delta
+                            push_to_session(session_id, SSEEvent.DELTA, {"delta": delta})
+                            continue
+                    # 已确认是推理模型：在思考区内等待 </think>
+                    if _in_think:
+                        if "</think>" in _buf:
+                            _in_think = False
+                            tail = _buf.split("</think>", 1)[1]
+                            if tail:
+                                final_text += tail
+                                push_to_session(session_id, SSEEvent.DELTA, {"delta": tail})
+                        # 否则仍在思考，丢弃该增量（保留在 _buf 以便后续切分）
+                    else:
+                        # 已越过 </think>，正常输出
                         final_text += delta
-                        # 将增量内容放入队列
                         push_to_session(session_id, SSEEvent.DELTA, {"delta": delta})
 
                 logger.info(f"流式输出完成，总长度: {len(final_text)}")
@@ -245,13 +339,14 @@ class NodeAnswerOutput(NodeBase):
                 # 发生错误时，尝试推送到前端
                 push_to_session(session_id, SSEEvent.ERROR, {"error": str(e)})
 
-            state["answer"] = final_text
+            state["answer"] = _clean_answer(final_text)
         else:
             # 非流式直接调用
             logger.info(f"模式: 非流式输出 (Blocking), Session: {session_id}")
             try:
                 response = llm.invoke(prompt)
                 content = response.content
+                content = _clean_answer(content)  # 剥离思考过程，仅保留最终回答
                 state["answer"] = content  # LLM排版答案内容 写进 state 的answer
                 set_task_result(session_id, "answer", content)  # 会话ID  answer  内容
                 logger.info(f"生成回答完成，长度: {len(content)}")
