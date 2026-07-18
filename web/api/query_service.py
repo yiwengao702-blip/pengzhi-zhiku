@@ -43,14 +43,55 @@ app = FastAPI(
     description="此文档是掌柜智库查询流程的API接口说明"
 )
 
+# [安全加固 Phase0] 跨域收紧：同 import_service，禁止 `*` + credentials 的非法组合。
+def _kb_cors_origins() -> list:
+    raw = os.getenv("KB_CORS_ORIGINS", "")
+    if raw:
+        return [o.strip() for o in raw.split(",") if o.strip()]
+    return [
+        "http://127.0.0.1:8100", "http://127.0.0.1:8101",
+        "http://localhost:8100", "http://localhost:8101",
+    ]
+
+
 # 2. 跨域
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # 允许的源
-    allow_credentials=True,  # 允许携带cookie
+    allow_origins=_kb_cors_origins(),  # 显式白名单
+    allow_credentials=False,  # 同源无需凭证，关闭以根除凭证泄露面
     allow_methods=["*"],  # 允许的请求方法
     allow_headers=["*"],  # 允许的请求头
 )
+
+
+# [安全加固 Phase0] 可选 API 密钥闸门（防御纵深）：设置 KB_API_KEY 后，
+# /query、/stream、/history 等问答/历史接口必须携带 `X-API-Key` 或 `Authorization: Bearer <key>`。
+# 未设置时保持开发态开放（服务已默认绑定 127.0.0.1），启动打印告警提醒生产务必配置。
+_KB_API_KEY = os.getenv("KB_API_KEY", "").strip()
+if _KB_API_KEY:
+    from starlette.middleware.base import BaseHTTPMiddleware
+    from starlette.responses import JSONResponse
+
+    class _ApiKeyGuard(BaseHTTPMiddleware):
+        async def dispatch(self, request, call_next):
+            p = request.url.path
+            if p == "/query" or p.startswith("/stream") or p.startswith("/history"):
+                auth = request.headers.get("Authorization", "")
+                token = auth[7:].strip() if auth.lower().startswith("bearer ") else request.headers.get("X-API-Key", "").strip()
+                if token != _KB_API_KEY:
+                    return JSONResponse(
+                        status_code=401,
+                        content={"ok": False, "detail": "缺少或错误的 API 密钥"},
+                    )
+            return await call_next(request)
+
+    app.add_middleware(_ApiKeyGuard)
+else:
+    import logging as _logging
+    _logging.getLogger("knowledge_base").warning(
+        "KB_API_KEY 未设置：问答/历史接口当前无任何鉴权（仅依赖 127.0.0.1 绑定）。"
+        "生产环境请设置强随机 KB_API_KEY 并在调用方携带 X-API-Key。"
+    )
 
 # 3. 静态页面路由
 @app.get("/chat.html")  # 对外访问地址

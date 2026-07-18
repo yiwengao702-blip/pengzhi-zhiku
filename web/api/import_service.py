@@ -45,14 +45,68 @@ app = FastAPI(
     description="此文档是鹏至智库导入流程的API接口说明"
 )
 
+# [安全加固 Phase0] 跨域收紧：禁止 `*` + credentials 的非法组合，
+# 改为显式来源白名单（环境变量 KB_CORS_ORIGINS 可覆盖，逗号分隔）。
+# 原 allow_origins=["*"] + allow_credentials=True 既会被浏览器拒绝，
+# 又意味着任何网站都能代表用户发起带凭证请求，属高危误配置。
+def _kb_cors_origins() -> list:
+    raw = os.getenv("KB_CORS_ORIGINS", "")
+    if raw:
+        return [o.strip() for o in raw.split(",") if o.strip()]
+    # 默认仅放行同源的导入/问答前端（前端由本服务同源托管，一般无需跨域）
+    return [
+        "http://127.0.0.1:8100", "http://127.0.0.1:8101",
+        "http://localhost:8100", "http://localhost:8101",
+    ]
+
+
 # 2. 跨域
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # 允许的源
-    allow_credentials=True,  # 允许携带cookie
+    allow_origins=_kb_cors_origins(),  # 显式白名单
+    allow_credentials=False,  # 同源无需凭证，关闭以根除凭证泄露面
     allow_methods=["*"],  # 允许的请求方法
     allow_headers=["*"],  # 允许的请求头
 )
+
+
+# [安全加固 Phase0] 可选 API 密钥闸门（防御纵深）。
+# 设置环境变量 KB_API_KEY 后，/upload、/stats 等变更/敏感接口必须携带
+# `X-API-Key: <key>` 或 `Authorization: Bearer <key>`，否则返回 401。
+# 未设置时保持开发态开放（服务已默认绑定 127.0.0.1），但启动会打印醒目告警，
+# 提醒生产环境务必配置强随机 KB_API_KEY。
+_KB_API_KEY = os.getenv("KB_API_KEY", "").strip()
+if _KB_API_KEY:
+    from starlette.middleware.base import BaseHTTPMiddleware
+    from starlette.responses import JSONResponse
+
+    class _ApiKeyGuard(BaseHTTPMiddleware):
+        async def dispatch(self, request, call_next):
+            if request.url.path in ("/upload", "/stats"):
+                auth = request.headers.get("Authorization", "")
+                token = auth[7:].strip() if auth.lower().startswith("bearer ") else request.headers.get("X-API-Key", "").strip()
+                if token != _KB_API_KEY:
+                    return JSONResponse(
+                        status_code=401,
+                        content={"ok": False, "detail": "缺少或错误的 API 密钥"},
+                    )
+            return await call_next(request)
+
+    app.add_middleware(_ApiKeyGuard)
+else:
+    import logging as _logging
+    _logging.getLogger("knowledge_base").warning(
+        "KB_API_KEY 未设置：导入/统计接口当前无任何鉴权（仅依赖 127.0.0.1 绑定）。"
+        "生产环境请设置强随机 KB_API_KEY 并在调用方携带 X-API-Key。"
+    )
+
+
+# [安全加固 Phase0] 上传文件名净化：防止 `../../etc/passwd` 之类路径穿越。
+# 仅保留基础文件名，剥离任何目录成分与不可见字符。
+def _safe_filename(name: str) -> str:
+    name = os.path.basename(name or "").strip()
+    name = name.replace("\\", "_").replace("/", "_").replace("\x00", "")
+    return name or "unnamed.bin"
 
 
 # 2.5 健康检查：用于服务探活（与 query_service 对齐，方便一键启动后确认导入服务已就绪）
@@ -450,8 +504,10 @@ async def upload_files(background_tasks: BackgroundTasks, files: List[UploadFile
         # 4. 构建该任务的本地独立目录：output/YYYYMMDD/TaskID，避免多文件重名冲突
         file_dir = os.path.join(data_dir, task_id)
         os.makedirs(file_dir, exist_ok=True)  # 目录不存在则创建，存在则不做处理
+        # [安全加固 Phase0] 净化上传文件名，杜绝路径穿越（../ 或绝对路径）
+        safe_name = _safe_filename(file.filename)
         # 构建上传文件的本地保存绝对路径
-        import_file_path = os.path.join(file_dir, file.filename)
+        import_file_path = os.path.join(file_dir, safe_name)
 
         # 5. 将上传的文件保存到本地临时目录（后续MinIO上传/文件解析均基于此文件）
         with open(import_file_path, "wb") as file_buffer:
@@ -463,7 +519,8 @@ async def upload_files(background_tasks: BackgroundTasks, files: List[UploadFile
 
         # 6. 将本地文件上传至MinIO对象存储，做持久化保存
         # 构建MinIO中的文件对象名：pdf_files/YYYYMMDD/文件名（按日期分层，和本地一致） MINIO上的路径
-        minio_object_name = f"pdf_files/{datetime.now().strftime('%Y%m%d')}/{file.filename}"
+        # [安全加固 Phase0] 同样使用净化后的文件名，避免对象存储内路径穿越/覆盖
+        minio_object_name = f"pdf_files/{datetime.now().strftime('%Y%m%d')}/{safe_name}"
         try:
             # 获取MinIO客户端实例
             minio_client = get_minio_client()
