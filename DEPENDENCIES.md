@@ -54,10 +54,20 @@ pip install -r requirements.txt
 | `modelscope` | >=1.38.1 | 模型下载 / 离线缓存（`.env` 中 `MODELSCOPE_OFFLINE`） | 模型管理阶段 |
 | `torch` | >=2.11.0 | 深度学习后端（GPU cu128） | `flagembedding` / `transformers` 运行依赖 |
 | `dashscope` | >=1.26.4 | 文本重排序服务 | `reranker_http_utils.py` |
+| `sakura_base` | 本地可编辑安装（**非 PyPI 包**） | LLM 网关：文本路径大模型调用统一收敛到 `sakura_base.llm.gateway` | `utils/sakura_llm_bridge.py`、`utils/llm_utils.py` |
+
+> ⚠️ **`sakura_base` 是本地兄弟工程依赖，不是 PyPI 包**（2026-07-17 LLM 网关融合引入）。
+> 它来自兄弟工程 **sakura_platform**，未安装时 `import utils.sakura_llm_bridge` 会直接抛 `RuntimeError`
+> 并提示安装方式。请在 knowledge_base 的 `.venv` 中执行：
+> ```bash
+> pip install -e "<sakura_platform 路径>/packages/sakura_base[web]"
+> # 本机示例：pip install -e "D:\WorkBuddy\2026-10-14-11-06-38\sakura_platform/packages/sakura_base[web]"
+> ```
+> 安装后 `import sakura_base` 应可直接成功。多模态 / 视觉调用（vl_model）仍由各节点直连 `ChatOpenAI`，不依赖此包。
 
 ---
 
-## 三、已被移除的“假依赖 / 冗余项”（重要）
+## 三、已被移除的"假依赖 / 冗余项"（重要）
 
 原 `pyproject.toml` 存在以下问题，已全部修正：
 

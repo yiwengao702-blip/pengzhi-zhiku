@@ -87,6 +87,11 @@ openai-agents(导入名 agents) / pymilvus / pymongo / minio /
 FlagEmbedding(导入名 FlagEmbedding) / transformers / modelscope / torch / dashscope`。
 （注：库名大小写与 PyPI 包名不同——`openai-agents`→`agents`，`flagembedding`→`FlagEmbedding`。）
 
+> ⚠️ **额外依赖 `sakura_base`（兄弟工程，非 PyPI）**：LLM 网关融合后，文本路径的大模型调用收敛到
+> `sakura_base.llm.gateway`，它来自本地兄弟工程 **sakura_platform**，需以可编辑模式安装进本工程 `.venv`：
+> `pip install -e "<sakura_platform 路径>/packages/sakura_base[web]"`。未安装则服务在导入期即报错。
+> 详细安装与排查见 `DEPENDENCIES.md` 第二节。
+
 ---
 
 ## 四、环境变量配置（.env）
