@@ -96,8 +96,13 @@ if _KB_API_KEY:
 else:
     import logging as _logging
     _logging.getLogger("knowledge_base").warning(
-        "KB_API_KEY 未设置：导入/统计接口当前无任何鉴权（仅依赖 127.0.0.1 绑定）。"
-        "生产环境请设置强随机 KB_API_KEY 并在调用方携带 X-API-Key。"
+        "KB_API_KEY 未设置：导入/统计接口当前无任何鉴权（仅依赖 127.0.0.1 绑定）。\n"
+        "生产环境务必启用 API Key 闸门，具体设置步骤：\n"
+        "  1) 生成强随机密钥 —— PowerShell: $k=-join((1..64)|%{'0123456789abcdef'[(Get-Random -Max 16)]});$k\n"
+        "                         Bash/Linux: python -c 'import secrets;print(secrets.token_hex(32))'\n"
+        "  2) 写入项目 .env：KB_API_KEY=<上一步生成的密钥>\n"
+        "  3) 调用方请求头携带：X-API-Key: <密钥>  或  Authorization: Bearer <密钥>\n"
+        "未设置前，任何能访问 127.0.0.1:8100 的进程均可免鉴权调用导入接口。"
     )
 
 
