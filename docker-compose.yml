@@ -1,0 +1,106 @@
+# docker-compose.yml —— 鹏至智库本地中间件一键起（评测 / 开发联调用）
+#
+# 仅负责知识库 RAG 依赖的外部中间件，不含应用本身（应用用 python main.py 起）。
+# 端口与 .env.example 默认值对齐：
+#   Milvus   19530   MongoDB  27017（无鉴权，库 kb001）   MinIO 9000（minioadmin/minioadmin）
+#
+# 说明：Milvus standalone 自身还需要 etcd + 对象存储。为避免与项目自身的 MinIO（9000）冲突，
+# Milvus 内部用的 MinIO 映射到了宿主机 9900（仅内部通信用，无需外连），两者互不干扰。
+#
+# 用法：
+#   docker compose up -d          # 拉起全部
+#   docker compose ps             # 查看健康状态
+#   docker compose down           # 停止并保留数据（volumes/ 目录）
+#   docker compose down -v        # 停止并清空数据
+
+services:
+  # ---------- MongoDB：文档元数据 / 对话历史 ----------
+  mongo:
+    image: mongo:7
+    # 不启用鉴权，与项目 .env 的 MONGO_URL=mongodb://localhost:27017 对齐
+    volumes:
+      - ./volumes/mongo:/data/db
+    ports:
+      - "27017:27017"
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping')"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 20s
+
+  # ---------- MinIO（项目用）：图片等对象存储 ----------
+  minio-project:
+    image: minio/minio:RELEASE.2024-05-28T17-19-04Z
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    command: server /data --console-address ":9001"
+    volumes:
+      - ./volumes/minio-project:/data
+    ports:
+      - "9000:9000"     # 数据端口（应用连这个）
+      - "9001:9001"     # 控制台
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 10s
+
+  # ---------- Milvus standalone 依赖：etcd ----------
+  etcd:
+    image: quay.io/coreos/etcd:v3.5.14
+    environment:
+      - ETCD_AUTO_COMPACTION_MODE=revision
+      - ETCD_AUTO_COMPACTION_RETENTION=1000
+      - ETCD_QUOTA_BACKEND_BYTES=4294967296
+      - ETCD_SNAPSHOT_COUNT=50000
+    volumes:
+      - ./volumes/etcd:/etcd
+    command: etcd -advertise-client-urls=http://etcd:2379 -listen-client-urls http://0.0.0.0:2379 --data-dir /etcd
+    healthcheck:
+      test: ["CMD", "etcdctl", "endpoint", "health"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 10s
+
+  # ---------- Milvus standalone 依赖：内部 MinIO（宿主机 9900，避免与项目 MinIO 9000 冲突）----------
+  milvus-minio:
+    image: minio/minio:RELEASE.2024-05-28T17-19-04Z
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    command: server /data --console-address ":9001"
+    volumes:
+      - ./volumes/milvus-minio:/data
+    ports:
+      - "9900:9000"     # 仅宿主机映射，应用不需要连它；Milvus 容器内部走 9000
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 10s
+
+  # ---------- Milvus：向量数据库 ----------
+  milvus:
+    image: milvusdb/milvus:v2.4.13
+    command: ["milvus", "run", "standalone"]
+    environment:
+      ETCD_ENDPOINTS: etcd:2379
+      MINIO_ADDRESS: milvus-minio:9000
+    volumes:
+      - ./volumes/milvus:/var/lib/milvus
+    ports:
+      - "19530:19530"
+    depends_on:
+      - etcd
+      - milvus-minio
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9091/healthz"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 30s

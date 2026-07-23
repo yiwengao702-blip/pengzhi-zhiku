@@ -255,3 +255,29 @@ curl -o /dev/null -w "%{http_code}" http://127.0.0.1:8000/import.html   # -> 200
 
 > 说明：完整端到端跑通导入/问答，仍需按要求准备 Milvus、模型文件与有效的 LLM API Key。
 > 服务本身已具备「直接运行」能力。
+
+---
+
+## 十、本地中间件一键起与评测（docker-compose）
+
+知识库运行依赖 Milvus / MongoDB / MinIO 三个中间件。本仓库提供 `docker-compose.yml`，可一键在本机拉起（无需改业务代码）：
+
+```bash
+docker compose up -d          # 拉起全部中间件
+docker compose ps             # 查看健康状态（全部 healthy 后再用应用）
+```
+
+服务端口与 `.env.example` 默认值一致：Milvus `19530`、MongoDB `27017`（无鉴权）、MinIO `9000`（minioadmin/minioadmin）。
+> 注：Milvus standalone 还需 etcd + 对象存储，compose 中已一并包含（`etcd` + 名为 `milvus-minio` 的内部 MinIO，宿主机映射 `9900` 以避开项目 MinIO 的 `9000`）。运行期数据落在 `volumes/`（已 gitignore）。
+
+中间件就绪后，即可跑离线评测（调参指引见 `检索链路优化方案.md` 5.6.4）：
+
+```bash
+# 方式一：一键（拉起中间件 + 等 healthy + 跑评测）
+bash tools/run_eval.sh
+
+# 方式二：中间件已在跑时，只跑评测
+NO_UP=1 TOP_K=5 bash tools/run_eval.sh
+```
+
+评测还需 `.env` 配置好 LLM API Key（`OPENAI_API_KEY`）与 `BGE_M3_PATH` 指向本地模型；结果写入 `eval_report.json`（hit_rate / Recall@K / 平均·P95 耗时）。
