@@ -1,0 +1,237 @@
+/* D:/knowledge_base/web/page/assets/css/chat.css
+   智能对话页专属样式（共享设计令牌与骨架见 theme.css）
+   仅放置对话页独有的组件，避免与 theme.css 重复，保证单一维护点。
+*/
+
+/* 应用主区（对话页专有，含顶部金色 accent 条）
+   注意：对话页已被包进全站 .appmain 壳层（应用栏 + 次级工具条 + 页脚），
+   因此 .app 必须改用 flex:1 + min-height:0，而不是 height:100%，
+   否则会连同 chatbar 与 appfoot 一起撑破 .appmain 的 overflow:hidden。 */
+.app{
+  width:100%;flex:1;min-height:0;max-width:none;border:none;border-radius:0;box-shadow:none;
+  display:flex;flex-direction:column;background:var(--panel);position:relative;
+}
+
+/* 次级工具条：位于应用栏之下、对话区之上，承载 API 状态、流式开关、清空与提示 */
+.chatbar{
+  flex:0 0 auto;display:flex;align-items:center;gap:14px;
+  padding:10px 24px;background:var(--panel);border-bottom:1px solid var(--border);
+}
+.chatbar__opt{display:inline-flex;align-items:center;gap:7px;font-size:13px;color:var(--ink-2);cursor:pointer;user-select:none}
+.chatbar__opt input{accent-color:var(--gold);width:15px;height:15px;cursor:pointer}
+.chatbar__spacer{flex:1;min-width:8px}
+.chatbar__hint{font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* 浅色 chatbar 上的状态药丸：覆盖 theme.css 中面向深色应用栏的配色，保证可读 */
+.chatbar .pill{
+  color:var(--ink-2);border-color:var(--border-strong);background:var(--brand-soft);
+  padding:5px 12px;
+}
+.chatbar .pill::before{background:#7f8ea3;box-shadow:0 0 0 3px rgba(127,142,163,.16)}
+.chatbar .pill.ok{color:#1f7a51}
+.chatbar .pill.ok::before{background:#3fb27a;box-shadow:0 0 0 3px rgba(63,178,122,.18)}
+.app::before{
+  content:"";position:absolute;top:0;left:0;right:0;height:3px;z-index:6;
+  background:linear-gradient(90deg,var(--brand-strong),var(--brand) 40%,var(--gold) 100%);
+}
+
+/* 顶栏品牌区（对话页左侧 Logo + 标题，区别于概览页的面包屑） */
+.brand{display:flex;align-items:center;gap:12px;min-width:240px}
+.logo{
+  width:40px;height:40px;border-radius:12px;
+  background:linear-gradient(135deg,#13635b,#0c201d);
+  box-shadow:0 8px 18px rgba(12,32,29,.4), inset 0 0 0 1px rgba(239,125,86,.45);
+  display:flex;align-items:center;justify-content:center;color:#ffb499;flex:0 0 auto;
+}
+.logo svg{width:22px;height:22px;display:block}
+.title{display:flex;flex-direction:column;line-height:1.15}
+.title strong{font-size:15px;color:#fff;letter-spacing:.4px;font-weight:600}
+.title span{font-size:12px;color:rgba(255,255,255,.62);margin-top:3px}
+.top-actions label input{accent-color:var(--gold)}
+
+/* 聊天区 */
+.chat{
+  flex:1;overflow:auto;padding:24px 24px 16px;
+  background:radial-gradient(800px 320px at 50% -10%, rgba(22,82,140,.05), transparent 70%), #fbfcfe;
+  scrollbar-width:thin;scrollbar-color:#cdd8e6 #fbfcfe;
+}
+.chat::-webkit-scrollbar{width:10px}
+.chat::-webkit-scrollbar-thumb{background:#cdd8e6;border-radius:99px;border:3px solid #fbfcfe}
+.chat::-webkit-scrollbar-thumb:hover{background:#b9c7da}
+
+/* 日期分隔线 */
+.dayline{text-align:center;color:var(--muted);font-size:12px;margin:4px 0 18px;position:relative}
+.dayline::before,.dayline::after{
+  content:"";display:inline-block;width:40px;height:1px;background:var(--border-strong);
+  vertical-align:middle;margin:0 12px;
+}
+
+/* 消息气泡 */
+.msg{display:flex;gap:12px;margin:16px 0;align-items:flex-end;animation:rise .35s ease both}
+@keyframes rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+.msg.user{justify-content:flex-end}
+.msg > div:not(.avatar){flex:1;min-width:0}
+.msg.user > div:not(.avatar){display:flex;flex-direction:column;align-items:flex-end}
+.avatar{
+  width:38px;height:38px;border-radius:12px;background:linear-gradient(180deg,#eef3f9,#e3eaf3);
+  display:flex;align-items:center;justify-content:center;font-size:12px;color:#41556b;
+  flex:0 0 auto;box-shadow:var(--shadow-sm);
+}
+.avatar.bot{
+  background:linear-gradient(135deg,#13635b,#0c201d);color:#ffb499;font-size:11px;font-weight:700;
+  box-shadow:0 8px 16px rgba(12,32,29,.28), inset 0 0 0 1px rgba(239,125,86,.4);
+}
+.bubble{
+  max-width:min(720px, 76%);display:inline-block;border-radius:16px;padding:13px 15px;
+  border:1px solid var(--border);background:linear-gradient(180deg,#ffffff,#fbfdff);
+  position:relative;line-height:1.7;font-size:14px;color:var(--text);
+  white-space:pre-wrap;overflow-wrap:break-word;box-shadow:var(--shadow-sm);
+}
+.msg.user .bubble{
+  background:linear-gradient(135deg,#14958a,#0b5650);color:#fff;border-color:transparent;
+  box-shadow:0 10px 24px rgba(15,63,110,.3), inset 0 1px 0 rgba(255,255,255,.12);
+}
+.meta{font-size:11px;color:var(--muted);margin-top:8px}
+.msg.user .meta{color:rgba(15,63,110,.72)}
+
+/* 阶段进度折叠块 */
+details.progress{
+  margin-top:10px;border:1px dashed rgba(239,125,86,.55);border-radius:13px;
+  padding:10px 13px;background:var(--gold-soft);
+}
+details.progress summary{cursor:pointer;user-select:none;color:#8a6d36;font-size:12px;font-weight:600}
+.progress ul{margin:8px 0 0 18px;padding:0}
+.progress li{margin:4px 0;font-size:12px;color:#56657a}
+
+/* 答案图片 */
+.answer-images{margin-top:10px;display:flex;flex-direction:column;gap:10px}
+.answer-images img{
+  display:block;max-width:min(100%,600px);max-height:600px;width:auto;height:auto;
+  border-radius:13px;border:1px solid var(--border);box-shadow:0 10px 24px rgba(14,42,71,.1);background:#fff;
+}
+.answer-images a{font-size:12px;color:var(--brand);text-decoration:none;word-break:break-all}
+.answer-images a:hover{text-decoration:underline}
+
+/* “输入中”动画 */
+.typing{display:inline-flex;gap:6px;align-items:center}
+.dot{width:7px;height:7px;border-radius:50%;background:#9aa6b2;animation:bounce 1.2s infinite ease-in-out}
+.dot:nth-child(2){animation-delay:.15s}
+.dot:nth-child(3){animation-delay:.3s}
+.typing__label{font-size:12px;color:var(--muted);margin-left:3px;letter-spacing:.5px}
+@keyframes bounce{0%,80%,100%{transform:translateY(0);opacity:.5}40%{transform:translateY(-5px);opacity:1}}
+
+/* 答案复制按钮：悬浮于机器人气泡右上角，悬停气泡时淡入 */
+.bubble-copy{
+  position:absolute;top:9px;right:9px;z-index:2;
+  display:inline-flex;align-items:center;gap:4px;padding:4px 9px;
+  border:1px solid var(--border);border-radius:8px;
+  background:rgba(255,255,255,.82);-webkit-backdrop-filter:blur(2px);backdrop-filter:blur(2px);
+  color:var(--ink-2);font-size:11.5px;line-height:1;cursor:pointer;font-family:inherit;
+  opacity:0;transform:translateY(-2px);
+  transition:opacity .18s var(--ease),transform .18s var(--ease),color .18s var(--ease),border-color .18s var(--ease);
+}
+.bubble:hover .bubble-copy{opacity:1;transform:none}
+.bubble-copy:hover{color:var(--brand);border-color:var(--brand)}
+.bubble-copy.is-done{color:#1f7a51;border-color:#3fb27a}
+
+
+/* 输入区：悬浮圆角卡片，替代传统贴底分割线，更具现代商务感 */
+.composer{margin:0 18px 12px;padding:10px 12px 10px 16px;border:1px solid var(--border);border-radius:18px;display:flex;gap:12px;align-items:flex-end;background:#fff;box-shadow:0 8px 24px rgba(14,42,71,.08)}
+textarea{
+  flex:1;resize:none;min-height:48px;max-height:160px;overflow-y:auto;padding:13px 15px;border-radius:13px;
+  border:1px solid var(--border);outline:none;font-size:14px;line-height:1.55;
+  background:#fbfcfe;transition:height .15s ease,border-color .2s,box-shadow .2s;font-family:inherit;
+}
+textarea:focus{border-color:var(--brand);box-shadow:0 0 0 3px rgba(22,82,140,.12);background:#fff}
+.send{
+  width:94px;height:48px;border:none;border-radius:13px;cursor:pointer;font-size:14px;font-weight:600;
+  color:#fff;position:relative;overflow:hidden;background:linear-gradient(135deg,#13635b,#0b5650);
+  box-shadow:0 10px 22px rgba(15,63,110,.3);transition:.2s var(--ease);
+}
+.send::after{
+  content:"";position:absolute;top:0;left:-60%;width:45%;height:100%;
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,.38),transparent);
+  transform:skewX(-20deg);transition:left .55s ease;
+}
+.send:hover{filter:brightness(1.07);transform:translateY(-1px)}
+.send:hover::after{left:130%}
+.send:active{transform:translateY(0)}
+.send:disabled{opacity:.6;cursor:not-allowed;box-shadow:none}
+/* 精修：聊天区微交互 */
+.chat{background:radial-gradient(900px 360px at 50% -12%, rgba(22,82,140,.06), transparent 70%), #fbfcfe;}
+.msg{transition:transform .2s}
+.msg:hover{transform:translateY(-1px)}
+.bubble{transition:box-shadow .2s}
+.bubble:hover{box-shadow:0 6px 18px rgba(12,32,29,.10)}
+.dayline{letter-spacing:1px}
+.topbar .me{margin-left:2px}
+/* ===========================================================
+   精修：对话页质感（追加层）
+   =========================================================== */
+.brand .logo{box-shadow:0 8px 18px rgba(12,32,29,.4), inset 0 0 0 1px rgba(239,125,86,.45), 0 0 16px rgba(239,125,86,.18)}
+.title strong{letter-spacing:.5px}
+
+/* 气泡内高光 + 更柔和圆角 */
+.bubble{border-radius:18px;box-shadow:var(--shadow-sm), inset 0 1px 0 rgba(255,255,255,.6)}
+.msg.user .bubble{border-radius:18px;box-shadow:0 12px 26px rgba(15,63,110,.32), inset 0 1px 0 rgba(255,255,255,.16)}
+
+/* 机器人头像金色光环 */
+.avatar.bot{box-shadow:0 8px 16px rgba(12,32,29,.28), inset 0 0 0 1px rgba(239,125,86,.4), 0 0 12px rgba(239,125,86,.18)}
+
+/* 输入区发丝线 */
+.composer{border-top:1px solid var(--border);box-shadow:inset 0 1px 0 rgba(255,255,255,.7)}
+
+/* 发送按钮更高级渐变 */
+.send{background:linear-gradient(135deg,#14958a,#0b5650);box-shadow:0 12px 26px rgba(11,86,80,.34)}
+
+/* 进度折叠块更精致 */
+details.progress{border-radius:14px;box-shadow:var(--shadow-sm)}
+/* ===========================================================
+   精修·三：对话页层次（追加层）
+   =========================================================== */
+/* 欢迎消息（首个 bot，紧跟 dayline）金色描边强调 */
+.dayline + .msg.bot .bubble{border-color:rgba(239,125,86,.45);box-shadow:0 12px 30px rgba(12,32,29,.10), inset 0 1px 0 rgba(255,255,255,.7)}
+/* 聊天区柔和渐变底，替代纯白 */
+.chat{background:radial-gradient(900px 360px at 50% -12%, rgba(22,82,140,.06), transparent 70%), linear-gradient(180deg,#fbfdff,#f4f8fc)}
+/* ===== 精修·四：对话页空状态 Hero（追加层） ===== */
+.chat-hero{display:flex;flex-direction:column;align-items:center;text-align:center;padding:52px 24px 28px;animation:fadeUp .5s ease both;transition:opacity .22s ease, transform .22s ease}
+.chat-hero__icon{width:64px;height:64px;border-radius:18px;display:flex;align-items:center;justify-content:center;color:#ffb499;background:linear-gradient(135deg,#13635b,#0c201d);box-shadow:0 12px 26px rgba(12,32,29,.30), inset 0 0 0 1px rgba(239,125,86,.45), 0 0 18px rgba(239,125,86,.18);margin-bottom:18px}
+.chat-hero__icon svg{width:32px;height:32px}
+.chat-hero__title{margin:0;font-size:22px;font-weight:700;color:var(--ink);letter-spacing:.4px}
+.chat-hero__sub{margin:10px 0 0;color:var(--muted);font-size:13.5px;max-width:540px;line-height:1.7}
+.chat-hero__chips{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;margin-top:24px}
+.chip-sug{border:1px solid var(--border-strong);background:rgba(255,255,255,.72);color:var(--ink-2);font-size:13px;padding:9px 16px;border-radius:999px;cursor:pointer;transition:.2s var(--ease);box-shadow:var(--shadow-sm);font-family:inherit}
+.chip-sug:hover{border-color:var(--brand);color:var(--brand);background:#fff;transform:translateY(-1px);box-shadow:0 8px 18px rgba(22,82,140,.14)}
+.chip-sug:active{transform:translateY(0)}
+
+/* ===========================================================
+   深色主题：对话页次级工具条适配
+   =========================================================== */
+[data-theme="dark"] .chatbar{background:#0c1a2c;border-color:rgba(255,255,255,.08)}
+[data-theme="dark"] .chatbar .pill{
+  background:rgba(255,255,255,.06);color:rgba(255,255,255,.82);border-color:rgba(255,255,255,.18);
+}
+[data-theme="dark"] .chatbar .pill.ok{color:#7ee0a8}
+[data-theme="dark"] .chatbar__opt{color:rgba(226,234,245,.85)}
+[data-theme="dark"] .chatbar__hint{color:rgba(160,174,194,.78)}
+
+/* 深色主题：答案复制按钮适配 */
+[data-theme="dark"] .bubble-copy{
+  background:rgba(255,255,255,.06);color:rgba(220,230,245,.85);border-color:rgba(255,255,255,.18);
+}
+[data-theme="dark"] .bubble-copy:hover{color:#7ee0a8;border-color:#3fb27a}
+[data-theme="dark"] .bubble-copy.is-done{color:#7ee0a8;border-color:#3fb27a}
+[data-theme="dark"] .typing__label{color:rgba(160,174,194,.85)}
+
+/* ===========================================================
+   机器人消息头像：数据库/知识库圆柱图标
+   原先头像内塞入四字全称「鹏至智库」，在 38×38 方框里被挤成两行，又小又乱；
+   历经「单字鹏 → 书本 → 数据库圆柱」三版，最终定稿为数据库圆柱图标
+   （与问答页 Hero、概览页页头同一枚图标），金色描边 + 深蓝渐变底，
+   既统一画风，又贴合「企业知识中枢」的调性。
+   =========================================================== */
+.avatar.bot{
+  color:#ffb499;
+  background:linear-gradient(135deg,#13635b,#0c201d);
+}
+.avatar.bot svg{width:21px;height:21px;display:block}
+[data-theme="dark"] .avatar.bot{color:#f0d99b}

@@ -1,0 +1,117 @@
+/* D:/knowledge_base/web/page/assets/css/overview.css
+   知识概览页专属样式（共享设计令牌与骨架见 theme.css）
+   仅放置概览页独有的组件，避免与 theme.css 重复，保证单一维护点。
+*/
+
+/* 内容容器：限制最大宽度并水平居中，宽屏下更均衡；移动端自动占满 */
+/* 在统一壳层（.appmain）内纵向滚动，避免整页滚动破坏顶栏 */
+.content{padding:32px 40px 48px;max-width:1280px;margin:0 auto;width:100%;flex:1;min-height:0;overflow:auto}
+
+/* 统计加载提示条 */
+.stats-banner{margin:0 0 18px;padding:12px 16px;border-radius:10px;font-size:13.5px;line-height:1.6;color:#9c4a2e;background:linear-gradient(180deg,#fff8e8,#fdf1d6);border:1px solid rgba(239,125,86,.55);box-shadow:0 6px 18px -12px rgba(239,125,86,.7)}
+.stats-banner[hidden]{display:none}
+
+/* 面板刷新按钮 */
+.panel__title{position:relative}
+.panel__refresh{margin-left:auto;border:1px solid var(--border-strong);background:#fff;color:var(--brand);width:26px;height:26px;border-radius:8px;cursor:pointer;font-size:14px;line-height:1;display:inline-flex;align-items:center;justify-content:center;transition:.2s;flex:0 0 auto}
+.panel__refresh:hover{background:var(--brand-soft);border-color:var(--brand);transform:rotate(90deg)}
+
+/* 统计卡片 */
+.stat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px}
+.stat{
+  background:var(--panel);border:1px solid var(--border);border-radius:16px;padding:18px 18px 16px;
+  box-shadow:var(--shadow-sm);position:relative;overflow:hidden;transition:.2s;
+}
+.stat:hover{border-color:var(--border-strong);box-shadow:0 10px 26px rgba(14,42,71,.08);transform:translateY(-2px)}
+.stat::before{content:"";position:absolute;top:0;left:0;width:100%;height:3px;background:linear-gradient(90deg,var(--brand),var(--gold))}
+.stat__ico{width:40px;height:40px;border-radius:11px;display:flex;align-items:center;justify-content:center;color:var(--brand);background:var(--brand-soft);margin-bottom:12px}
+.stat__ico svg{width:22px;height:22px}
+.stat__val{font-size:28px;font-weight:700;color:var(--ink);line-height:1.1;letter-spacing:.5px}
+.stat__label{font-size:13px;color:var(--muted);margin-top:4px}
+.stat__trend{font-size:12px;margin-top:8px;color:#2c8f66;display:inline-flex;align-items:center;gap:4px}
+.stat__trend.down{color:#c0392b}
+
+/* 两栏面板 */
+.grid-2{display:grid;grid-template-columns:1.4fr 1fr;gap:16px}
+.panel{background:var(--panel);border:1px solid var(--border);border-radius:16px;padding:20px 22px;box-shadow:var(--shadow-sm)}
+.panel__title{font-size:15px;font-weight:700;color:var(--ink);margin:0 0 16px;display:flex;align-items:center;gap:8px}
+.panel__title small{font-weight:400;color:var(--muted);font-size:12px;margin-left:auto}
+
+/* 最近导入列表 */
+.doc-row{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--border)}
+.doc-row:last-child{border-bottom:none}
+.doc-ico{width:38px;height:38px;border-radius:10px;flex:0 0 auto;display:flex;align-items:center;justify-content:center;color:#fff;font-size:11px;font-weight:700;background:linear-gradient(135deg,#13635b,#0c201d);box-shadow:inset 0 0 0 1px rgba(239,125,86,.4)}
+.doc-info{flex:1;min-width:0}
+.doc-name{font-size:14px;font-weight:600;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.doc-meta{font-size:12px;color:var(--muted);margin-top:3px}
+.chip{padding:3px 9px;border-radius:999px;font-size:11px;font-weight:600;color:#fff;background:linear-gradient(135deg,var(--brand),var(--brand-strong))}
+.chip.pdf{background:linear-gradient(135deg,#d05a4f,#b8403a)}
+.chip.md{background:linear-gradient(135deg,#36a878,#2c8f66)}
+.badge{padding:4px 10px;border-radius:999px;font-size:11px;font-weight:600;color:#fff;display:inline-flex;align-items:center;gap:5px}
+.badge::before{content:"";width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.85)}
+.badge.done{background:linear-gradient(135deg,#36a878,#2c8f66)}
+.badge.run{background:linear-gradient(135deg,#14958a,#0f766e)}
+.badge.wait{background:linear-gradient(135deg,#d9a23f,#c2872f)}
+
+/* 最近导入表：类型彩色 chip（颜色由前端 PALETTE 按类型注入，与环形图配色一致） */
+.tbl .type-chip{display:inline-flex;align-items:center;gap:5px;padding:3px 11px;border-radius:999px;font-size:11.5px;font-weight:600;color:#fff;background:var(--c,#8a9ab0);box-shadow:0 2px 6px rgba(14,42,71,.14);white-space:nowrap;letter-spacing:.3px}
+.tbl .type-chip::before{content:"";width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.92)}
+[data-theme="dark"] .tbl .type-chip{box-shadow:0 2px 8px rgba(0,0,0,.35)}
+
+/* 知识库分布条形 */
+.bar-row{display:flex;align-items:center;gap:12px;margin:14px 0}
+.bar-label{width:84px;flex:0 0 auto;font-size:13px;color:var(--text);font-weight:600}
+.bar-track{flex:1;height:10px;background:#eef1f6;border-radius:99px;overflow:hidden}
+.bar-fill{height:100%;border-radius:99px;background:linear-gradient(90deg,var(--brand),#2f8fd0);position:relative}
+.bar-fill.gold{background:linear-gradient(90deg,var(--gold),#d9b96a)}
+.bar-fill::after{content:"";position:absolute;top:0;left:-40%;width:40%;height:100%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.5),transparent);animation:shine 2.2s infinite}
+@keyframes shine{0%{left:-40%}100%{left:120%}}
+.bar-val{width:42px;text-align:right;font-size:13px;font-weight:700;color:var(--ink);flex:0 0 auto}
+
+@media (max-width:980px){
+  .stat-grid{grid-template-columns:repeat(2,1fr)}
+  .grid-2{grid-template-columns:1fr}
+}
+@media (max-width:760px){
+  .content{padding:20px 16px 30px}
+}
+
+/* 精修：数字与入场动画 */
+.stat__val{font-variant-numeric:tabular-nums}
+.page-head h1,.stat__label,.panel__title{letter-spacing:.3px}
+.stat{animation:fadeUp .5s ease both}
+.grid-2 .panel:nth-child(1){animation:fadeUp .5s .08s ease both}
+.grid-2 .panel:nth-child(2){animation:fadeUp .5s .16s ease both}
+.bar-fill{transform-origin:left;animation:grow .9s cubic-bezier(.2,.7,.3,1) both}
+@keyframes grow{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+.topbar .me{margin-left:2px}
+/* ===========================================================
+   精修：概览页质感（追加层）
+   =========================================================== */
+.stat{box-shadow:var(--shadow-sm), inset 0 1px 0 rgba(255,255,255,.7)}
+.stat:hover{box-shadow:0 16px 36px rgba(14,42,71,.12), inset 0 1px 0 rgba(255,255,255,.7)}
+.stat__ico{box-shadow:inset 0 0 0 1px rgba(22,82,140,.12), 0 6px 14px rgba(22,82,140,.12)}
+.stat__val{color:var(--ink);text-shadow:0 1px 0 rgba(255,255,255,.6)}
+
+/* 面板标题左侧金色竖条 */
+.panel__title::before{content:"";width:8px;height:18px;border-radius:4px;background:linear-gradient(180deg,var(--brand),var(--gold));display:inline-block;margin-right:2px}
+
+/* 文档行悬浮高亮 */
+.doc-row{transition:background .2s;border-radius:10px;padding-left:6px;padding-right:6px}
+.doc-row:hover{background:linear-gradient(90deg,rgba(22,82,140,.05),transparent)}
+
+/* 条形更立体 */
+.bar-fill{box-shadow:0 2px 6px rgba(22,82,140,.25)}
+.bar-row{margin:16px 0}
+/* ===========================================================
+   精修·三：统计图标渐变白 + 内容区柔和底（追加层）
+   =========================================================== */
+/* 统计图标升级为品牌渐变 + 白色图标 */
+.stat__ico{background:linear-gradient(135deg,var(--brand),var(--brand-strong));color:#fff;box-shadow:0 8px 18px rgba(15,63,110,.30), inset 0 1px 0 rgba(255,255,255,.25)}
+/* 内容区柔和渐变底 */
+.content{background:linear-gradient(180deg,#fbfdff 0%, #eef3f9 100%)}
+/* 卡片悬浮过渡更顺滑 */
+.panel,.stat{transition:transform .25s ease, box-shadow .25s ease}
+/* ===== 精修·四：概览数字更醒目（追加层） ===== */
+.stat__val{font-size:30px}
+.panel__title{font-size:15.5px}

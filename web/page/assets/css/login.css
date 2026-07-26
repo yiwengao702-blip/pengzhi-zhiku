@@ -1,0 +1,201 @@
+/* D:/knowledge_base/web/page/assets/css/login.css
+   登录页专属样式（设计令牌与主题变量见 theme.css）
+   采用「深蓝品牌侧栏 + 右侧登录卡片」的企业级登录布局，适配窄屏自动堆叠。 */
+
+.login-page{
+  min-height:100vh;margin:0;font-family:inherit;
+  background:
+    radial-gradient(1200px 600px at -10% -10%, rgba(32,110,180,.18), transparent 60%),
+    radial-gradient(900px 500px at 110% 120%, rgba(239,125,86,.16), transparent 55%),
+    linear-gradient(135deg,#06231f 0%, #0c201d 55%, #07140f 100%);
+}
+/* 背景装饰光晕，增加空间层次感（固定定位、不可点击） */
+.login-page::before,
+.login-page::after{
+  content:"";position:fixed;z-index:0;border-radius:50%;filter:blur(64px);pointer-events:none;opacity:.5;
+}
+.login-page::before{width:440px;height:440px;left:-140px;top:-160px;background:radial-gradient(circle,rgba(32,110,180,.6),transparent 70%)}
+.login-page::after{width:400px;height:400px;right:-120px;bottom:-140px;background:radial-gradient(circle,rgba(239,125,86,.5),transparent 70%)}
+
+.login-wrap{
+  position:relative;z-index:1;
+  min-height:100vh;display:flex;align-items:stretch;justify-content:center;
+}
+
+/* ---- 左侧品牌区 ---- */
+.login-hero{
+  flex:0 0 auto;width:min(46%,520px);padding:56px 56px 48px;
+  display:flex;flex-direction:column;color:#fff;position:relative;overflow:hidden;
+  border-right:1px solid rgba(255,255,255,.07);
+  background:
+    radial-gradient(700px 360px at 12% 8%, rgba(40,120,190,.30), transparent 60%),
+    radial-gradient(620px 360px at 100% 100%, rgba(239,125,86,.22), transparent 60%),
+    linear-gradient(160deg, #082b26 0%, #0c201d 55%, #061a16 100%);
+}
+/* 细网格纹理，提升品牌区质感 */
+.login-hero::before{
+  content:"";position:absolute;inset:0;pointer-events:none;opacity:.5;
+  background-image:linear-gradient(rgba(255,255,255,.05) 1px,transparent 1px),
+                   linear-gradient(90deg,rgba(255,255,255,.05) 1px,transparent 1px);
+  background-size:38px 38px;
+  -webkit-mask-image:radial-gradient(120% 90% at 20% 10%,#000,transparent 75%);
+          mask-image:radial-gradient(120% 90% at 20% 10%,#000,transparent 75%);
+}
+/* 巨幅水印「鹏」作为背景装饰，呼应品牌 */
+.login-hero::after{
+  content:"鹏";position:absolute;right:-40px;bottom:-90px;pointer-events:none;
+  font-size:340px;font-weight:800;line-height:1;color:rgba(255,255,255,.05);
+  text-shadow:0 8px 40px rgba(0,0,0,.25);animation:floatY 8s ease-in-out infinite;
+}
+@keyframes floatY{0%,100%{transform:translateY(0)}50%{transform:translateY(-18px)}}
+.login-hero>*{position:relative;z-index:1}
+.login-hero__brand{display:flex;align-items:center;gap:14px}
+.login-hero__logo{
+  width:48px;height:48px;border-radius:14px;display:grid;place-items:center;
+  font-weight:800;font-size:22px;color:#ffb499;
+  background:linear-gradient(135deg,#13635b,#0c201d);
+  box-shadow:inset 0 0 0 1px rgba(239,125,86,.5), 0 10px 24px rgba(0,0,0,.35);
+}
+.login-hero__name{font-size:20px;font-weight:700;letter-spacing:.5px}
+.login-hero__tag{font-size:12px;color:rgba(255,255,255,.55);margin-top:3px}
+.login-hero__title{
+  margin:48px 0 0;font-size:32px;font-weight:800;line-height:1.45;letter-spacing:.4px;
+  background:linear-gradient(120deg,#ffffff 0%, #cfe2f5 100%);
+  -webkit-background-clip:text;background-clip:text;color:transparent;
+}
+.login-hero__feats{
+  list-style:none;margin:28px 0 0;padding:0;display:flex;flex-direction:column;gap:14px;
+}
+.login-hero__feats li{
+  position:relative;padding-left:26px;font-size:14px;color:rgba(226,234,245,.82);line-height:1.6;
+}
+.login-hero__feats li::before{
+  content:"";position:absolute;left:0;top:7px;width:16px;height:16px;border-radius:5px;
+  background:linear-gradient(135deg,var(--gold,#ef7d56),#ffb499);
+  box-shadow:0 0 0 3px rgba(239,125,86,.18);
+}
+.login-hero__env{
+  margin-top:auto;padding-top:32px;font-size:12px;color:rgba(255,255,255,.45);
+  display:inline-flex;align-items:center;gap:7px;
+}
+.login-hero__env::before{content:"";width:7px;height:7px;border-radius:50%;background:#3fb27a;box-shadow:0 0 0 3px rgba(63,178,122,.22)}
+
+/* ---- 右侧登录卡片（悬浮白卡面板） ---- */
+@keyframes cardIn{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
+.login-card{
+  flex:1 1 auto;max-width:560px;width:100%;margin:36px;padding:44px 48px;
+  display:flex;flex-direction:column;justify-content:center;position:relative;overflow:hidden;
+  color:var(--text, #2a3a4d);background:linear-gradient(180deg,#ffffff 0%, #f7fbff 100%);border-radius:20px;
+  border:1px solid rgba(255,255,255,.85);
+  box-shadow:0 30px 80px rgba(8,20,40,.34), inset 0 1px 0 rgba(255,255,255,.7);
+  animation:cardIn .5s ease both;
+}
+.login-card::before{
+  content:"";position:absolute;left:0;right:0;top:0;height:4px;
+  background:linear-gradient(90deg,var(--brand,#0f766e),var(--gold,#ef7d56));
+}
+.login-card__head h2{margin:0;font-size:26px;font-weight:800;color:var(--ink,#15233a);letter-spacing:.4px}
+.login-card__head p{margin:10px 0 0;font-size:14px;color:var(--muted,#6b7c92)}
+
+.login-form{margin-top:32px;display:flex;flex-direction:column;gap:18px}
+.login-field{display:flex;flex-direction:column;gap:8px}
+.login-field__label{font-size:13px;font-weight:600;color:var(--ink-2,#3b4a5a)}
+.login-field__box{
+  display:flex;align-items:center;gap:10px;padding:0 14px;height:48px;
+  background:#fff;border:1px solid var(--border,#dde5ee);border-radius:12px;
+  transition:border-color .2s, box-shadow .2s;
+}
+.login-field__box:focus-within{border-color:var(--brand,#0f766e);box-shadow:0 0 0 3px rgba(239,125,86,.18)}
+.login-field__box:hover{border-color:var(--brand,#0f766e)}
+.login-field__box svg{width:18px;height:18px;color:var(--muted,#6b7c92);flex:0 0 auto}
+.login-field__box input{flex:1;border:none;outline:none;background:transparent;font-size:14px;color:var(--text,#2a3a4d);min-width:0;font-family:inherit}
+.login-field__box input::placeholder{color:#9aa8ba}
+/* 字段级错误提示：红字 + 输入框红色高亮 */
+.login-field__err{font-size:12px;color:#c0392b;margin-top:2px;line-height:1.4}
+.login-field.is-error .login-field__box{border-color:#e0533f;box-shadow:0 0 0 3px rgba(224,83,63,.16)}
+.login-field.is-error .login-field__label{color:#c0392b}
+.login-field__eye{
+  border:none;background:none;cursor:pointer;color:var(--muted,#6b7c92);padding:4px;display:grid;place-items:center;flex:0 0 auto;
+}
+.login-field__eye:hover{color:var(--brand,#0f766e)}
+.login-field__eye svg{width:18px;height:18px}
+
+.login-row{display:flex;align-items:center;justify-content:space-between;font-size:13px}
+.login-remember{display:inline-flex;align-items:center;gap:7px;color:var(--ink-2,#3b4a5a);cursor:pointer;user-select:none}
+.login-remember input{accent-color:var(--gold,#ef7d56);width:15px;height:15px}
+.login-link{color:var(--brand,#0f766e);text-decoration:none}
+.login-link:hover{text-decoration:underline}
+
+.login-err{
+  font-size:13px;color:#c0392b;background:#fdecea;border:1px solid rgba(192,57,43,.25);
+  padding:9px 12px;border-radius:10px;
+}
+
+.login-submit{
+  margin-top:4px;width:100%;height:50px;border:none;border-radius:13px;cursor:pointer;
+  display:inline-flex;align-items:center;justify-content:center;gap:10px;
+  font-size:15px;font-weight:700;letter-spacing:2px;color:#fff;font-family:inherit;
+  background:linear-gradient(135deg,#14958a,#0b5650);
+  box-shadow:0 12px 26px rgba(15,63,110,.32);transition:.2s;position:relative;overflow:hidden;
+}
+/* 按钮 loading：旋转图标 + 禁用态 */
+.login-submit__spinner{width:18px;height:18px;border-radius:50%;border:2px solid rgba(255,255,255,.4);border-top-color:#fff;display:none;animation:spin .7s linear infinite}
+.login-submit.is-loading .login-submit__spinner{display:inline-block}
+.login-submit.is-loading{filter:saturate(.92);cursor:wait}
+.login-submit:disabled{cursor:wait}
+@keyframes spin{to{transform:rotate(360deg)}}
+.login-submit::after{
+  content:"";position:absolute;top:0;left:-60%;width:45%;height:100%;
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,.32),transparent);
+  transform:skewX(-20deg);transition:left .6s ease;pointer-events:none;
+}
+.login-submit:hover{filter:brightness(1.07);transform:translateY(-1px)}
+.login-submit:hover::after{left:130%}
+.login-submit:active{transform:translateY(0)}
+
+.login-divider{margin:26px 0;display:flex;align-items:center;gap:14px;color:var(--muted,#6b7c92);font-size:12px}
+.login-divider::before,.login-divider::after{content:"";flex:1;height:1px;background:var(--border,#dde5ee)}
+
+.login-sso{display:flex;gap:12px;flex-wrap:wrap}
+.sso-btn{
+  flex:1;min-width:120px;height:44px;border:1px solid var(--border,#dde5ee);border-radius:12px;
+  background:#fff;color:var(--ink-2,#3b4a5a);font-size:13.5px;font-weight:600;cursor:pointer;
+  font-family:inherit;transition:.18s;
+}
+.sso-btn:hover{border-color:var(--brand,#0f766e);color:var(--brand,#0f766e);background:var(--brand-soft,#e6f4f1);transform:translateY(-1px)}
+
+.login-foot{margin-top:32px;font-size:12px;color:var(--muted,#6b7c92);text-align:center}
+
+/* 底部注册入口：自上而下置底，分隔线 + 下划线链接（呼应截图） */
+.login-foot--entry{
+  margin-top:30px;padding-top:22px;border-top:1px solid var(--border,#dde5ee);
+  font-size:13px;color:var(--ink-2,#3b4a5a);
+}
+.login-foot--entry .login-link{
+  font-weight:600;text-decoration:underline;text-underline-offset:3px;text-decoration-thickness:1.5px;
+}
+.login-foot--entry + .login-foot{margin-top:10px}
+
+/* ---- 深色模式：登录卡片反色，与全站深色主题一致 ---- */
+[data-theme="dark"] .login-card{background:#0f2036;color:var(--text,#dce6f2);border-color:rgba(255,255,255,.10);box-shadow:0 30px 70px rgba(0,0,0,.5)}
+[data-theme="dark"] .login-card__head h2{color:var(--ink,#e8eef6)}
+[data-theme="dark"] .login-card__head p,[data-theme="dark"] .login-field__label,[data-theme="dark"] .login-remember{color:rgba(226,234,245,.85)}
+[data-theme="dark"] .login-field__box{background:#0f1d30;border-color:rgba(255,255,255,.12)}
+[data-theme="dark"] .login-field__box input{color:#e8eef6}
+[data-theme="dark"] .sso-btn{background:rgba(15,29,48,.9);border-color:rgba(255,255,255,.12);color:rgba(226,234,245,.9)}
+[data-theme="dark"] .sso-btn:hover{background:rgba(22,82,140,.4);color:#fff}
+[data-theme="dark"] .login-divider::before,[data-theme="dark"] .login-divider::after{background:rgba(255,255,255,.12)}
+[data-theme="dark"] .login-submit{background:linear-gradient(135deg,#13635b,#0c201d)}
+[data-theme="dark"] .login-foot--entry{border-top-color:rgba(255,255,255,.12);color:rgba(226,234,245,.85)}
+
+/* ---- 响应式：窄屏堆叠为单列 ---- */
+@media (max-width:880px){
+  .login-wrap{flex-direction:column}
+  .login-hero{
+    width:100%;border-right:none;border-bottom:1px solid rgba(255,255,255,.08);
+    padding:36px 28px 28px;
+  }
+  .login-hero__title{margin-top:24px;font-size:24px}
+  .login-hero__feats{display:none}
+  .login-card{padding:36px 28px 40px;max-width:none}
+}
