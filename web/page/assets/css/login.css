@@ -153,17 +153,6 @@
 .login-submit:hover::after{left:130%}
 .login-submit:active{transform:translateY(0)}
 
-.login-divider{margin:26px 0;display:flex;align-items:center;gap:14px;color:var(--muted,#6b7c92);font-size:12px}
-.login-divider::before,.login-divider::after{content:"";flex:1;height:1px;background:var(--border,#dde5ee)}
-
-.login-sso{display:flex;gap:12px;flex-wrap:wrap}
-.sso-btn{
-  flex:1;min-width:120px;height:44px;border:1px solid var(--border,#dde5ee);border-radius:12px;
-  background:#fff;color:var(--ink-2,#3b4a5a);font-size:13.5px;font-weight:600;cursor:pointer;
-  font-family:inherit;transition:.18s;
-}
-.sso-btn:hover{border-color:var(--brand,#0f766e);color:var(--brand,#0f766e);background:var(--brand-soft,#e6f4f1);transform:translateY(-1px)}
-
 .login-foot{margin-top:32px;font-size:12px;color:var(--muted,#6b7c92);text-align:center}
 
 /* 底部注册入口：自上而下置底，分隔线 + 下划线链接（呼应截图） */
@@ -182,9 +171,6 @@
 [data-theme="dark"] .login-card__head p,[data-theme="dark"] .login-field__label,[data-theme="dark"] .login-remember{color:rgba(226,234,245,.85)}
 [data-theme="dark"] .login-field__box{background:#0f1d30;border-color:rgba(255,255,255,.12)}
 [data-theme="dark"] .login-field__box input{color:#e8eef6}
-[data-theme="dark"] .sso-btn{background:rgba(15,29,48,.9);border-color:rgba(255,255,255,.12);color:rgba(226,234,245,.9)}
-[data-theme="dark"] .sso-btn:hover{background:rgba(22,82,140,.4);color:#fff}
-[data-theme="dark"] .login-divider::before,[data-theme="dark"] .login-divider::after{background:rgba(255,255,255,.12)}
 [data-theme="dark"] .login-submit{background:linear-gradient(135deg,#13635b,#0c201d)}
 [data-theme="dark"] .login-foot--entry{border-top-color:rgba(255,255,255,.12);color:rgba(226,234,245,.85)}
 
