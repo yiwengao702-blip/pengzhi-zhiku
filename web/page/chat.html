@@ -96,6 +96,15 @@
       </nav>
 
       <div class="appmain">
+      <!-- 检索遥测侧栏：以面板形式持续呈现最近一次检索的耗时/召回/相关度（信息呈现方式差异化） -->
+      <aside class="chatrail">
+        <div class="chatrail__hd">检索遥测 · 最近一次</div>
+        <div class="chatrail__body" id="railBody">
+          <div class="rail-empty">发送问题后，这里展示检索速度 / 召回数 / 最高相关度 / 命中状态</div>
+        </div>
+        <div class="chatrail__foot">会话 ID：<span id="railSession">—</span></div>
+      </aside>
+
       <div class="chatbar">
         <span class="pill" id="apiPill">API: 未连接</span>
         <label class="chatbar__opt"><input type="checkbox" id="streamToggle" checked> 流式输出</label>
@@ -501,6 +510,39 @@
       if(progressEl) bubble.appendChild(progressEl);
     }
 
+    // 检索遥测侧栏：把本次 meta 渲染进右侧面板（信息呈现方式差异化，独立于气泡内联指标行）
+    // 与气泡内的 .answer-stats 行形成「内联速览 + 面板遥测」双视图，避免与其它页雷同
+    function renderRailMeta(meta){
+      const railBody = document.getElementById('railBody');
+      if(!railBody || !meta || typeof meta !== 'object') return;
+      const secs = (ms) => (Number(ms || 0) / 1000).toFixed(2) + 's';
+
+      // 命中状态 → 三态配色（ok / warn / idle），与 chat.css 的 .rail-status--* 一一对应
+      let statusCls = 'rail-status--idle', statusText = '未检索';
+      if(meta.retrieved){
+        if(meta.hit){ statusCls = 'rail-status--ok'; statusText = '✅ 命中'; }
+        else if(meta.recall_count > 0){ statusCls = 'rail-status--warn'; statusText = '⚠️ 相关度不足 · 已拒答'; }
+        else { statusCls = 'rail-status--warn'; statusText = '❌ 未命中'; }
+      }
+
+      const rows = [];
+      if(meta.retrieved){
+        rows.push(['检索耗时', secs(meta.search_ms)]);
+        if(meta.rrf_ms) rows.push(['融合耗时', secs(meta.rrf_ms)]);
+        if(meta.rerank_ms) rows.push(['重排耗时', secs(meta.rerank_ms)]);
+        rows.push(['召回数', String(meta.recall_count != null ? meta.recall_count : 0) + ' 条']);
+        if(meta.top_score != null) rows.push(['最高相关度', Number(meta.top_score).toFixed(2)]);
+      }
+      if(meta.llm_ms) rows.push(['生成耗时', secs(meta.llm_ms)]);
+      if(meta.total_ms) rows.push(['总耗时', secs(meta.total_ms)]);
+
+      let html = `<div class="rail-status ${statusCls}">${escapeHtml(statusText)}</div>`;
+      for(const [k, v] of rows){
+        html += `<div class="rail-row"><span class="rail-k">${escapeHtml(k)}</span><span class="rail-v">${escapeHtml(v)}</span></div>`;
+      }
+      railBody.innerHTML = html;
+    }
+
     // 检索指标行：展示本次问答的检索速度 / 召回数 / 最高相关度 / 命中状态
     // 数据来自后端 meta 事件（流式）或 /query 响应的 meta 字段（非流式）
     function renderAnswerStats(botMsgEl, meta){
@@ -528,6 +570,8 @@
       el.textContent = parts.join(' · ');
       // 插到气泡之后、时间戳之前
       holder.insertBefore(el, holder.querySelector('.meta'));
+      // 同步渲染到右侧检索遥测侧栏（独立于气泡，形成差异化信息呈现）
+      renderRailMeta(meta);
       scrollToBottom();
     }
 
@@ -614,6 +658,9 @@
       addUserMsg(text);
       const botMsgEl = addBotMsgSkeleton();
       sendBtn.disabled = true;
+      // 同步当前会话 ID 到检索遥测侧栏底部
+      const railSession = document.getElementById('railSession');
+      if(railSession) railSession.textContent = sessionId;
 
       try{
         const isStream = streamToggle.checked;
@@ -823,6 +870,11 @@
       scrollToBottom();
     });
 
+    // 初始化即把当前会话 ID 写入检索遥测侧栏底部（避免未发问前显示「—」）
+    (function(){
+      const railSession = document.getElementById('railSession');
+      if(railSession) railSession.textContent = sessionId;
+    })();
     apiHealth();
     setInterval(apiHealth, 5000);
     loadHistory();
