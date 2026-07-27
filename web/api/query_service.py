@@ -292,6 +292,12 @@ def run_query_graph(session_id: str, user_query: str, is_stream: bool = True):
         set_task_result(session_id, "meta", meta)
         if is_stream:
             push_to_session(session_id, SSEEvent.META, meta)
+        # [检索指标] 回写进历史：使指标随会话持久化，刷新后前端可据此重绘指标行与遥测侧栏
+        try:
+            from utils.mongo_history_utils import update_latest_assistant_meta
+            update_latest_assistant_meta(session_id, meta)
+        except Exception as _e:
+            print(f"回写检索指标到历史失败(不影响主链路): {_e}")
         update_task_status(session_id, TASK_STATUS_COMPLETED, is_stream)
     except Exception as e:
         print(f"流程执行异常: {e}")
@@ -342,7 +348,10 @@ async def history(session_id: str, limit: int = 50):
                 "text": r.get("text", ""),
                 "rewritten_query": r.get("rewritten_query", ""),
                 "item_names": r.get("item_names", []),
-                "ts": r.get("ts")
+                "image_urls": r.get("image_urls", []),
+                "ts": r.get("ts"),
+                # 检索遥测指标：随历史返回，刷新后前端据此重绘指标行与遥测侧栏
+                "meta": r.get("meta")
             })
         return {"session_id": session_id, "items": items}
     except Exception as e:

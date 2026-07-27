@@ -85,7 +85,8 @@ def save_chat_message(
         rewritten_query: str = "",
         item_names: List[str] = None,
         image_urls: List[str] = None,
-        message_id: str = None
+        message_id: str = None,
+        meta: dict = None
 ) -> str:
     """
     写入/更新单条会话记录到MongoDB
@@ -97,6 +98,8 @@ def save_chat_message(
     :param item_names: 关联的商品名称列表（可选，支持多商品，默认None）
     :param image_urls: 关联的图片URL列表（可选，默认None）
     :param message_id: 记录主键ID（可选，有值则更新，无值则新增）
+    :param meta: 检索遥测指标（可选，含检索耗时/召回数/相关度/命中状态等），随助手答案一并持久化，
+                 供前端刷新后从历史恢复指标行与遥测侧栏，避免「刷新即丢失」
     :return: 插入/更新的记录唯一标识（新增返回ObjectId字符串，更新返回传入的message_id）
     """
     # 生成当前时间的时间戳（秒级），用于记录消息的创建时间，后续用于排序和查询
@@ -112,6 +115,9 @@ def save_chat_message(
         "image_urls": image_urls,  # 关联图片URL列表
         "ts": ts  # 时间戳，排序和时间筛选维度
     }
+    # 检索遥测指标：有则随记录落库（历史恢复时前端据此重绘指标行/侧栏）
+    if meta is not None:
+        document["meta"] = meta
 
     # 获取全局的HistoryMongoTool实例，使用单例模式
     mongo_tool = get_history_mongo_tool()
@@ -162,7 +168,44 @@ def update_message_item_names(ids: List[str], item_names: List[str]) -> int:
         return 0
 
 # 获取最近的消息
+def update_latest_assistant_meta(session_id: str, meta: dict) -> bool:
+    """
+    把本轮检索遥测指标回写进「该会话最近一条助手消息」，使其随历史持久化。
+    检索指标（检索耗时/召回数/最高相关度/命中状态）在 LangGraph 跑完才汇总，
+    而助手答案在 node_answer_output 节点已先行落库，故此处按 ts 倒序定位最新助手消息再补写 meta。
+    :param session_id: 会话唯一标识
+    :param meta: 检索遥测指标字典（来自 query_service._build_retrieval_meta）
+    :return: 是否成功补写（找到并更新返回 True，未找到或异常返回 False）
+    """
+    if not meta:
+        return False
+    mongo_tool = get_history_mongo_tool()
+    try:
+        # 定位该会话最近一条 assistant 消息（ts 最大）
+        latest = mongo_tool.chat_message.find_one(
+            {"session_id": session_id, "role": "assistant"},
+            sort=[("ts", -1)]
+        )
+        if not latest:
+            return False
+        mongo_tool.chat_message.update_one(
+            {"_id": latest["_id"]},
+            {"$set": {"meta": meta}}
+        )
+        return True
+    except Exception as e:
+        logger.error(f"回写检索指标到历史失败: {e}")
+        return False
+
+
 def get_recent_messages(session_id: str, limit: int = 10) -> List[Dict[str, Any]]:
+    """
+    查询指定会话的最近N条对话记录，返回原始字典格式
+    结果按时间正序排列，可直接喂给LLM作为上下文
+    :param session_id: 会话唯一标识，用于筛选指定会话的记录
+    :param limit: 条数限制，默认返回最近10条
+    :return: 对话记录列表（字典格式），查询失败返回空列表
+    """
     """
     查询指定会话的最近N条对话记录，返回原始字典格式
     结果按时间正序排列，可直接喂给LLM作为上下文

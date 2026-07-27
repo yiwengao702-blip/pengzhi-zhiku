@@ -149,6 +149,20 @@
 .rail-v{font-family:var(--c-mono);font-size:13px;color:var(--c-ink);font-weight:600}
 .chatrail__foot{margin-top:auto;padding-top:12px;border-top:1px solid var(--c-line-soft);font-size:12px;color:var(--c-muted)}
 
+/* 检索耗时趋势：以横向柱状迷你图呈现最近若干次检索总耗时，命中/未命中以颜色区分 */
+.rail-trend{display:flex;flex-direction:column;gap:7px;padding:11px 12px;background:var(--c-panel-2);
+  border:1px solid var(--c-line-soft);border-radius:10px}
+.rail-trend__hd{font-family:var(--c-mono);font-size:11px;letter-spacing:.4px;color:var(--c-muted);
+  display:flex;justify-content:space-between;gap:8px}
+.rail-trend__hd b{color:var(--c-accent);font-weight:700}
+.rail-trend__bars{display:flex;align-items:flex-end;gap:4px;height:48px}
+.rail-trend__bar{flex:1;min-width:0;display:flex;flex-direction:column;justify-content:flex-end;gap:3px}
+.rail-trend__fill{width:100%;border-radius:3px 3px 0 0;
+  background:linear-gradient(180deg,var(--c-accent),rgba(255,180,84,.32));transition:.2s var(--c-ease)}
+.rail-trend__bar--warn .rail-trend__fill{background:linear-gradient(180deg,var(--c-warn),rgba(255,180,84,.3))}
+.rail-trend__bar--bad .rail-trend__fill{background:linear-gradient(180deg,var(--c-bad),rgba(255,107,107,.3))}
+.rail-trend__x{display:flex;justify-content:space-between;font-family:var(--c-mono);font-size:10px;color:var(--c-muted);opacity:.7}
+
 /* ===== 对话主区 ===== */
 .app{display:flex;flex-direction:column;min-width:0;min-height:0;background:var(--c-bg-2)}
 

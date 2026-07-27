@@ -401,7 +401,7 @@
       scrollToBottom();
     }
 
-    function addBotMsgWithTime(text, ts, imageUrls){
+    function addBotMsgWithTime(text, ts, imageUrls, meta){
       const id = 'bot-his-' + Math.random().toString(36).slice(2);
       const html = `
         <div class="msg bot" id="${id}">
@@ -417,6 +417,9 @@
       if(el){
         const answerEl = el.querySelector('.answer');
         renderAnswerWithImages(answerEl, text || '', imageUrls || []);
+        // 历史恢复：若该条助手答案带有持久化的检索指标，则重绘指标行与遥测侧栏
+        // 多条按时间顺序渲染，最后一条会自然成为侧栏「最近一次」展示内容
+        if(meta && typeof meta === 'object') renderAnswerStats(el, meta);
       }
       scrollToBottom();
     }
@@ -512,6 +515,33 @@
 
     // 检索遥测侧栏：把本次 meta 渲染进右侧面板（信息呈现方式差异化，独立于气泡内联指标行）
     // 与气泡内的 .answer-stats 行形成「内联速览 + 面板遥测」双视图，避免与其它页雷同
+    // recentMetas：会话内累计的检索指标序列，用于绘制「耗时趋势」迷你柱图（刷新后由历史恢复填充）
+    const recentMetas = [];
+    const RAIL_TREND_MAX = 10; // 趋势图最多展示最近 N 次检索
+
+    // 构建耗时趋势迷你柱图 HTML（数据不足 2 条时返回空，避免无效装饰）
+    function buildRailTrendHtml(){
+      if(recentMetas.length < 2) return '';
+      // 仅取最近 RAIL_TREND_MAX 条，按时间正序展示
+      const slice = recentMetas.slice(-RAIL_TREND_MAX);
+      const vals = slice.map(m => Number(m.total_ms || 0));
+      const max = Math.max.apply(null, vals) || 1;
+      let bars = '';
+      for(const m of slice){
+        const total = Number(m.total_ms || 0);
+        const h = Math.max(6, Math.round((total / max) * 100)); // 最小高度 6% 保证可见
+        let cls = 'rail-trend__bar';
+        if(m.retrieved && !m.hit) cls += (m.recall_count > 0) ? ' rail-trend__bar--warn' : ' rail-trend__bar--bad';
+        bars += `<div class="${cls}"><div class="rail-trend__fill" style="height:${h}%"></div></div>`;
+      }
+      const avg = Math.round(vals.reduce((a,b)=>a+b,0) / vals.length);
+      return `<div class="rail-trend">
+        <div class="rail-trend__hd"><span>检索耗时趋势</span><b>近 ${slice.length} 次 · 均 ${(avg/1000).toFixed(2)}s</b></div>
+        <div class="rail-trend__bars">${bars}</div>
+        <div class="rail-trend__x"><span>早</span><span>近</span></div>
+      </div>`;
+    }
+
     function renderRailMeta(meta){
       const railBody = document.getElementById('railBody');
       if(!railBody || !meta || typeof meta !== 'object') return;
@@ -536,10 +566,21 @@
       if(meta.llm_ms) rows.push(['生成耗时', secs(meta.llm_ms)]);
       if(meta.total_ms) rows.push(['总耗时', secs(meta.total_ms)]);
 
+      // 累计到会话序列并裁剪，供趋势图使用（每条指标都会推进一次，刷新后由历史重放填充）
+      recentMetas.push({
+        total_ms: meta.total_ms || 0,
+        retrieved: !!meta.retrieved,
+        hit: !!meta.hit,
+        recall_count: meta.recall_count || 0
+      });
+      if(recentMetas.length > RAIL_TREND_MAX * 2) recentMetas.shift();
+
       let html = `<div class="rail-status ${statusCls}">${escapeHtml(statusText)}</div>`;
       for(const [k, v] of rows){
         html += `<div class="rail-row"><span class="rail-k">${escapeHtml(k)}</span><span class="rail-v">${escapeHtml(v)}</span></div>`;
       }
+      // 趋势图追加在指标行之后（仅 recentMetas 足够时渲染）
+      html += buildRailTrendHtml();
       railBody.innerHTML = html;
     }
 
@@ -599,7 +640,7 @@
           if(item.role === 'user'){
             addUserMsgWithTime(item.text || '', item.ts);
           }else{
-            addBotMsgWithTime(item.text || '', item.ts, item.image_urls || []);
+            addBotMsgWithTime(item.text || '', item.ts, item.image_urls || [], item.meta);
           }
         }
         scrollToBottom();
