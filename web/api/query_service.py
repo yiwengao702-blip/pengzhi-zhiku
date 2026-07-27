@@ -34,8 +34,8 @@ from processor.query_processor.main_graph_v2 import KBQueryWorkflowV2
 from utils.mongo_history_utils import clear_history, get_recent_messages
 from utils.answer_cache import get_cached_answer, set_cached_answer  # [P1-方案7] 答案短时缓存
 from utils.sse_utils import create_sse_queue, SSEEvent, push_to_session, sse_generator
-from utils.task_utils import update_task_status, TASK_STATUS_PROCESSING, get_task_result, TASK_STATUS_COMPLETED, \
-    TASK_STATUS_FAILED
+from utils.task_utils import update_task_status, TASK_STATUS_PROCESSING, get_task_result, set_task_result, \
+    TASK_STATUS_COMPLETED, TASK_STATUS_FAILED
 from tool.logger import logger
 # 1. 创建应用
 app = FastAPI(
@@ -192,14 +192,66 @@ async def query(background_tasks: BackgroundTasks, request: QueryRequest):
         answer = get_task_result(session_id,"answer","")
         # 写入缓存（空答案不缓存，由 set_cached_answer 内部拦截）
         set_cached_answer(session_id, user_query, answer)
+        # [检索指标] 非流式：meta 由 run_query_graph 内组装并写入任务结果，随响应一并返回
+        meta = get_task_result(session_id, "meta", None)
         return {
             "message":"处理完成！",
             "session_id":session_id,
             "answer":answer,
-            "done_list":[]
+            "done_list":[],
+            "meta": meta
         }
 
 # 定义查询接口
+def _build_retrieval_meta(final_state: dict, timings: dict, total_ms: float) -> dict:
+    """组装检索指标（检索速度 / 召回 / 相关度 / 命中），随答案推送给前端展示。
+
+    口径说明：
+    - 检索耗时 search_ms：三路召回（普通向量 / HyDE / 联网搜索）在 LangGraph 中是并行超步，
+      同一超步内各节点共享耗时，因此取三者的 max（真实墙钟）而非 sum，再加上游 HyDE
+      预处理、RRF 融合与重排在 meta 中单列，前端按需展示；
+    - 命中 hit：只要最终答案不是以「抱歉」开头的兜底/拒答话术（未找到相关产品 /
+      知识库未收录 / 生成出错）即视为命中。实时单次问答无法计算真实"正确率"，
+      「召回数 + Top1 相关分 + 命中标志」是最接近的可观测代理指标；
+    - top_score：重排后 Top1 的相关性分数，即该次检索的"最高相关度"。
+    """
+    def t(node: str) -> float:
+        return float(timings.get(node, 0.0))
+
+    search_wall_ms = max(
+        t("node_search_embedding"),
+        t("node_search_embedding_hyde"),
+        t("node_web_search_mcp"),
+    )
+    # 是否真正进入过检索链路（主体确认阶段直接反问/拒答时，四类检索节点均未执行）
+    retrieved = (t("node_search_embedding") + t("node_search_embedding_hyde")
+                 + t("node_rrf") + t("node_rerank")) > 0
+    docs = final_state.get("reranked_docs") or []
+    scores = []
+    for d in docs:
+        try:
+            if d.get("score") is not None:
+                scores.append(float(d.get("score")))
+        except (TypeError, ValueError):
+            continue
+    answer = (final_state.get("answer") or "").strip()
+    hit = bool(answer) and not answer.startswith("抱歉")
+    return {
+        "total_ms": round(total_ms),
+        "confirm_ms": round(t("node_item_name_confirm")),
+        "prep_ms": round(t("node_hyde_embed_prep")),
+        "search_ms": round(search_wall_ms),
+        "rrf_ms": round(t("node_rrf")),
+        "rerank_ms": round(t("node_rerank")),
+        "llm_ms": round(t("node_answer_output")),
+        "rrf_count": len(final_state.get("rrf_chunks") or []),
+        "recall_count": len(docs),
+        "top_score": round(max(scores), 4) if scores else None,
+        "retrieved": retrieved,
+        "hit": hit,
+    }
+
+
 def run_query_graph(session_id: str, user_query: str, is_stream: bool = True):
     print(f"开始流程图处理...{session_id} {user_query} {is_stream}")
 
@@ -230,8 +282,16 @@ def run_query_graph(session_id: str, user_query: str, is_stream: bool = True):
 
     try:
         workflow = KBQueryWorkflowV2()
-        for chunk in workflow.run(init_state, stream=is_stream):
-            logger.debug(chunk)
+        # [检索指标] 统一走带计时的执行通道：同时拿到最终状态与逐节点耗时，
+        # 用于组装「检索速度/召回/相关度/命中」指标。节点内部的流式推送行为
+        # 仍由 state["is_stream"] 控制，与原 invoke/stream 语义完全一致。
+        final_state, timings, total_ms = workflow.run_with_timing(init_state, stream=is_stream)
+        # [检索指标] 组装 meta 并登记到任务结果；流式时必须在置 completed 之前推送，
+        # 保证 meta 事件先于任何关闭信号到达前端（前端 final 后延迟收口等待 meta）
+        meta = _build_retrieval_meta(final_state, timings, total_ms)
+        set_task_result(session_id, "meta", meta)
+        if is_stream:
+            push_to_session(session_id, SSEEvent.META, meta)
         update_task_status(session_id, TASK_STATUS_COMPLETED, is_stream)
     except Exception as e:
         print(f"流程执行异常: {e}")

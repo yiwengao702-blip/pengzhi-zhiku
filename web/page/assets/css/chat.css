@@ -235,3 +235,7 @@ details.progress{border-radius:14px;box-shadow:var(--shadow-sm)}
 }
 .avatar.bot svg{width:21px;height:21px;display:block}
 [data-theme="dark"] .avatar.bot{color:#f0d99b}
+
+
+/* 检索指标行：检索速度 / 召回 / 相关度 / 命中状态（后端 meta 事件驱动） */
+.answer-stats{margin-top:8px;font-size:11.5px;line-height:1.5;color:var(--muted,#6b857e);letter-spacing:.2px;user-select:none}

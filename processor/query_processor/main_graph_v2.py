@@ -138,6 +138,49 @@ class KBQueryWorkflowV2:
         else:
             return self._compiled_app.invoke(initial_state)
 
+    def run_with_timing(self, initial_state: QueryGraphState, stream: bool = False):
+        """带逐节点耗时的执行入口（「检索速度/命中指标」的数据源）。
+
+        使用 stream_mode=["updates","values"] 双通道执行：
+        - updates：每个超步（节点）完成时产出 {节点名: 状态增量}。相邻两次 updates 之间的
+          墙钟间隔即该超步的执行耗时；并行超步（三路召回）会在同一个 chunk 里同时出现
+          多个节点名，它们共享同一份耗时（对并行分支取 max 而非 sum，见服务层组装逻辑）。
+        - values：每个超步完成后的全量状态快照，最后一个快照即最终状态，
+          服务层从中读取 answer / reranked_docs / rrf_chunks 组装指标。
+
+        返回 (final_state, timings_ms, total_ms)：
+        - final_state: 最终状态字典
+        - timings_ms: {节点名: 累计耗时毫秒}
+        - total_ms: 全部超步耗时之和（端到端墙钟，不含服务层开销）
+
+        说明：无论 stream 真假都统一走 stream 通道执行——节点内部的流式推送行为
+        由 state["is_stream"] 控制，与这里的执行通道无关，语义与 invoke 完全一致。
+        原有 run() 保持不变，评测脚本等既有调用方不受影响。
+        """
+        if not self._compiled_app:
+            self.compile()
+
+        import time as _time
+        timings: dict = {}
+        total_ms = 0.0
+        final_state: dict = {}
+        t_prev = _time.perf_counter()
+        for mode, chunk in self._compiled_app.stream(initial_state, stream_mode=["updates", "values"]):
+            t_now = _time.perf_counter()
+            if mode == "updates" and isinstance(chunk, dict):
+                # 距上个超步完成事件的时间差 ≈ 当前超步的执行耗时
+                dt_ms = (t_now - t_prev) * 1000.0
+                total_ms += dt_ms
+                for node_name in chunk:
+                    if node_name == "__end__":
+                        continue
+                    timings[node_name] = timings.get(node_name, 0.0) + dt_ms
+                # 仅在 updates 时校准计时基准；values 快照的产出间隔不参与计时
+                t_prev = t_now
+            elif mode == "values" and isinstance(chunk, dict):
+                final_state = chunk
+        return final_state, timings, total_ms
+
 # ===================== 用法示例 =====================
 if __name__ == "__main__":
 

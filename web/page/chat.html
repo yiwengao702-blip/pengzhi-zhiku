@@ -9,7 +9,7 @@
   <meta http-equiv="Expires" content="0" />
   <title>鹏至智库知识库</title>
   <link rel="stylesheet" href="assets/css/theme.css?v=20261017">
-  <link rel="stylesheet" href="assets/css/chat.css?v=20261017">
+  <link rel="stylesheet" href="assets/css/chat.css?v=20261019">
   <!-- 全局服务地址配置（端口单一数据源，须与 .env 的 KB_PORT_* 一致） -->
   <script src="assets/js/app-config.js?v=20261012"></script>
   <script>
@@ -501,6 +501,36 @@
       if(progressEl) bubble.appendChild(progressEl);
     }
 
+    // 检索指标行：展示本次问答的检索速度 / 召回数 / 最高相关度 / 命中状态
+    // 数据来自后端 meta 事件（流式）或 /query 响应的 meta 字段（非流式）
+    function renderAnswerStats(botMsgEl, meta){
+      if(!botMsgEl || !meta || typeof meta !== 'object') return;
+      const bubble = botMsgEl.querySelector('.bubble');
+      if(!bubble) return;
+      const holder = bubble.parentNode;
+      if(holder.querySelector('.answer-stats')) return; // 已渲染过则跳过
+      const secs = (ms) => (Number(ms || 0) / 1000).toFixed(2) + 's';
+      const parts = [];
+      if(meta.retrieved){
+        parts.push('⚡ 检索 ' + secs(meta.search_ms));
+        if(meta.rrf_ms) parts.push('融合 ' + secs(meta.rrf_ms));
+        if(meta.rerank_ms) parts.push('重排 ' + secs(meta.rerank_ms));
+        parts.push('召回 ' + (meta.recall_count != null ? meta.recall_count : 0) + ' 条');
+        if(meta.top_score != null) parts.push('最高相关度 ' + Number(meta.top_score).toFixed(2));
+        parts.push(meta.hit ? '✅ 命中' : (meta.recall_count > 0 ? '⚠️ 相关度不足，已拒答' : '❌ 未命中'));
+      }else{
+        parts.push('未进入检索 · 主体确认阶段直接答复');
+      }
+      if(meta.llm_ms) parts.push('生成 ' + secs(meta.llm_ms));
+      if(meta.total_ms) parts.push('总耗时 ' + secs(meta.total_ms));
+      const el = document.createElement('div');
+      el.className = 'answer-stats';
+      el.textContent = parts.join(' · ');
+      // 插到气泡之后、时间戳之前
+      holder.insertBefore(el, holder.querySelector('.meta'));
+      scrollToBottom();
+    }
+
     async function apiHealth(){
       try{
         const res = await fetch(`${API_BASE}/health`);
@@ -599,6 +629,7 @@
           // data: { session_id, answer, done_list, error, message }
           renderProgress(botMsgEl, data.done_list || [], [], 'completed');
           finalizeBotAnswer(botMsgEl, data.answer, data.error, data.image_urls || []);
+          renderAnswerStats(botMsgEl, data.meta);
           sendBtn.disabled = false;
           return;
         }
@@ -617,6 +648,21 @@
         const es = new EventSource(`${API_BASE}/stream/${session_id}`);
         console.log('[perf] C EventSource created', performance.now(), { session_id });
         let rawAnswerText = '';
+
+        // final 之后不立刻关闭 SSE：后端 meta（检索指标）紧随 final 到达，
+        // 这里延迟 1.5s 收口兜底；meta 一到立即关闭，避免连接悬挂
+        let closeTimer = null;
+        function scheduleClose(){
+          if(closeTimer) clearTimeout(closeTimer);
+          closeTimer = setTimeout(() => { es.close(); }, 1500);
+        }
+
+        // 检索指标事件：渲染速度/召回/相关度/命中行，并立即收口 SSE 连接
+        es.addEventListener('meta', (e) => {
+          try{ renderAnswerStats(botMsgEl, JSON.parse(e.data || '{}')); }catch(_){}
+          if(closeTimer){ clearTimeout(closeTimer); closeTimer = null; }
+          es.close();
+        });
 
         es.addEventListener('progress', (e) => {
           try{
@@ -658,7 +704,7 @@
             const finalText = (d && typeof d.answer === 'string' && d.answer.trim().length > 0) ? d.answer : (rawAnswerText || answerEl.textContent || '');
             renderAnswerWithImages(answerEl, finalText, d.image_urls || []);
           }catch(_){}
-          es.close();
+          scheduleClose();
           sendBtn.disabled = false;
         });
 
@@ -674,7 +720,7 @@
             const finalText = (d && typeof d.answer === 'string' && d.answer.trim().length > 0) ? d.answer : (rawAnswerText || answerEl.textContent || '');
             renderAnswerWithImages(answerEl, finalText, d.image_urls || []);
           }catch(_){}
-          es.close();
+          scheduleClose();
           sendBtn.disabled = false;
         });
 

@@ -10,6 +10,7 @@ class SSEEvent:
     PROGRESS = "progress"   # 任务节点进度
     DELTA = "delta"         # LLM 流式输出增量
     FINAL = "final"         # 最终完整答案
+    META = "meta"           # 检索指标（耗时/召回/相关度/命中），紧随 final 之后推送
     ERROR = "error"         # 错误信息
     CLOSE = "__close__"     # 关闭连接信号
 
