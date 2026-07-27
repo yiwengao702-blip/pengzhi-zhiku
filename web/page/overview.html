@@ -201,11 +201,11 @@
       // 类型彩色 chip：颜色取自前端 PALETTE（与「文档类型分布」环形图配色统一），
       // 通过 CSS 变量 --c 注入，未命中时回退中性灰。
       function typeChip(t) {
-        var color = PALETTE[t] || '#8a9ab0';
+        var color = PALETTE[t] || '#8aa39c';
         return '<span class="type-chip" style="--c:' + color + '">' + escapeHtml(t || '—') + '</span>';
       }
 
-      var PALETTE = { 'PDF':'#d05a4f','Markdown':'#36a878','Word':'#2f6fb0','DOC':'#2f6fb0','DOCX':'#2f6fb0','Excel':'#2c8f66','XLS':'#2c8f66','PPT':'#c2872f','其他':'#8a9ab0' };
+      var PALETTE = { 'PDF':'#d05a4f','Markdown':'#36a878','Word':'#2f6fb0','DOC':'#2f6fb0','DOCX':'#2f6fb0','Excel':'#2c8f66','XLS':'#2c8f66','PPT':'#c2872f','其他':'#8aa39c' };
 
       function render(data) {
         if (!data || data.error) { showError(data && data.error ? data.error : '未知错误'); return; }
@@ -260,13 +260,13 @@
           var stops = [], acc = 0;
           keys.forEach(function (k) {
             var pct = Math.round(dist[k] / sum * 100);
-            var color = PALETTE[k] || '#8a9ab0';
+            var color = PALETTE[k] || '#8aa39c';
             stops.push(color + ' ' + acc + '% ' + (acc + pct) + '%');
             acc += pct;
           });
           donut.style.background = 'conic-gradient(' + stops.join(',') + ')';
           legend.innerHTML = keys.map(function (k) {
-            var color = PALETTE[k] || '#8a9ab0';
+            var color = PALETTE[k] || '#8aa39c';
             return '<div class="legend__row"><span class="legend__dot" style="background:' + color + '"></span>'
               + '<span class="legend__name">' + escapeHtml(k) + '</span>'
               + '<span class="legend__val">' + dist[k] + '</span></div>';

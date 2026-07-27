@@ -136,7 +136,7 @@
   display:inline-flex;align-items:center;justify-content:center;gap:10px;
   font-size:15px;font-weight:700;letter-spacing:2px;color:#fff;font-family:inherit;
   background:linear-gradient(135deg,#14958a,#0b5650);
-  box-shadow:0 12px 26px rgba(15,63,110,.32);transition:.2s;position:relative;overflow:hidden;
+  box-shadow:0 12px 26px rgba(12,46,42,.32);transition:.2s;position:relative;overflow:hidden;
 }
 /* 按钮 loading：旋转图标 + 禁用态 */
 .login-submit__spinner{width:18px;height:18px;border-radius:50%;border:2px solid rgba(255,255,255,.4);border-top-color:#fff;display:none;animation:spin .7s linear infinite}

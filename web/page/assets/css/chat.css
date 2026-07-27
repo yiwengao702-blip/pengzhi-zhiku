@@ -88,10 +88,10 @@
 }
 .msg.user .bubble{
   background:linear-gradient(135deg,#14958a,#0b5650);color:#fff;border-color:transparent;
-  box-shadow:0 10px 24px rgba(15,63,110,.3), inset 0 1px 0 rgba(255,255,255,.12);
+  box-shadow:0 10px 24px rgba(12,46,42,.3), inset 0 1px 0 rgba(255,255,255,.12);
 }
 .meta{font-size:11px;color:var(--muted);margin-top:8px}
-.msg.user .meta{color:rgba(15,63,110,.72)}
+.msg.user .meta{color:rgba(12,46,42,.72)}
 
 /* 阶段进度折叠块 */
 details.progress{
@@ -106,7 +106,7 @@ details.progress summary{cursor:pointer;user-select:none;color:#8a6d36;font-size
 .answer-images{margin-top:10px;display:flex;flex-direction:column;gap:10px}
 .answer-images img{
   display:block;max-width:min(100%,600px);max-height:600px;width:auto;height:auto;
-  border-radius:13px;border:1px solid var(--border);box-shadow:0 10px 24px rgba(14,42,71,.1);background:#fff;
+  border-radius:13px;border:1px solid var(--border);box-shadow:0 10px 24px rgba(12,46,42,.1);background:#fff;
 }
 .answer-images a{font-size:12px;color:var(--brand);text-decoration:none;word-break:break-all}
 .answer-images a:hover{text-decoration:underline}
@@ -135,7 +135,7 @@ details.progress summary{cursor:pointer;user-select:none;color:#8a6d36;font-size
 
 
 /* 输入区：悬浮圆角卡片，替代传统贴底分割线，更具现代商务感 */
-.composer{margin:0 18px 12px;padding:10px 12px 10px 16px;border:1px solid var(--border);border-radius:18px;display:flex;gap:12px;align-items:flex-end;background:#fff;box-shadow:0 8px 24px rgba(14,42,71,.08)}
+.composer{margin:0 18px 12px;padding:10px 12px 10px 16px;border:1px solid var(--border);border-radius:18px;display:flex;gap:12px;align-items:flex-end;background:#fff;box-shadow:0 8px 24px rgba(12,46,42,.08)}
 textarea{
   flex:1;resize:none;min-height:48px;max-height:160px;overflow-y:auto;padding:13px 15px;border-radius:13px;
   border:1px solid var(--border);outline:none;font-size:14px;line-height:1.55;
@@ -145,7 +145,7 @@ textarea:focus{border-color:var(--brand);box-shadow:0 0 0 3px rgba(22,82,140,.12
 .send{
   width:94px;height:48px;border:none;border-radius:13px;cursor:pointer;font-size:14px;font-weight:600;
   color:#fff;position:relative;overflow:hidden;background:linear-gradient(135deg,#13635b,#0b5650);
-  box-shadow:0 10px 22px rgba(15,63,110,.3);transition:.2s var(--ease);
+  box-shadow:0 10px 22px rgba(12,46,42,.3);transition:.2s var(--ease);
 }
 .send::after{
   content:"";position:absolute;top:0;left:-60%;width:45%;height:100%;
@@ -172,7 +172,7 @@ textarea:focus{border-color:var(--brand);box-shadow:0 0 0 3px rgba(22,82,140,.12
 
 /* 气泡内高光 + 更柔和圆角 */
 .bubble{border-radius:18px;box-shadow:var(--shadow-sm), inset 0 1px 0 rgba(255,255,255,.6)}
-.msg.user .bubble{border-radius:18px;box-shadow:0 12px 26px rgba(15,63,110,.32), inset 0 1px 0 rgba(255,255,255,.16)}
+.msg.user .bubble{border-radius:18px;box-shadow:0 12px 26px rgba(12,46,42,.32), inset 0 1px 0 rgba(255,255,255,.16)}
 
 /* 机器人头像金色光环 */
 .avatar.bot{box-shadow:0 8px 16px rgba(12,32,29,.28), inset 0 0 0 1px rgba(239,125,86,.4), 0 0 12px rgba(239,125,86,.18)}

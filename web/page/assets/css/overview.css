@@ -22,7 +22,7 @@
   background:var(--panel);border:1px solid var(--border);border-radius:16px;padding:18px 18px 16px;
   box-shadow:var(--shadow-sm);position:relative;overflow:hidden;transition:.2s;
 }
-.stat:hover{border-color:var(--border-strong);box-shadow:0 10px 26px rgba(14,42,71,.08);transform:translateY(-2px)}
+.stat:hover{border-color:var(--border-strong);box-shadow:0 10px 26px rgba(12,46,42,.08);transform:translateY(-2px)}
 .stat::before{content:"";position:absolute;top:0;left:0;width:100%;height:3px;background:linear-gradient(90deg,var(--brand),var(--gold))}
 .stat__ico{width:40px;height:40px;border-radius:11px;display:flex;align-items:center;justify-content:center;color:var(--brand);background:var(--brand-soft);margin-bottom:12px}
 .stat__ico svg{width:22px;height:22px}
@@ -54,7 +54,7 @@
 .badge.wait{background:linear-gradient(135deg,#d9a23f,#c2872f)}
 
 /* 最近导入表：类型彩色 chip（颜色由前端 PALETTE 按类型注入，与环形图配色一致） */
-.tbl .type-chip{display:inline-flex;align-items:center;gap:5px;padding:3px 11px;border-radius:999px;font-size:11.5px;font-weight:600;color:#fff;background:var(--c,#8a9ab0);box-shadow:0 2px 6px rgba(14,42,71,.14);white-space:nowrap;letter-spacing:.3px}
+.tbl .type-chip{display:inline-flex;align-items:center;gap:5px;padding:3px 11px;border-radius:999px;font-size:11.5px;font-weight:600;color:#fff;background:var(--c,#8aa39c);box-shadow:0 2px 6px rgba(12,46,42,.14);white-space:nowrap;letter-spacing:.3px}
 .tbl .type-chip::before{content:"";width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.92)}
 [data-theme="dark"] .tbl .type-chip{box-shadow:0 2px 8px rgba(0,0,0,.35)}
 
@@ -89,7 +89,7 @@
    精修：概览页质感（追加层）
    =========================================================== */
 .stat{box-shadow:var(--shadow-sm), inset 0 1px 0 rgba(255,255,255,.7)}
-.stat:hover{box-shadow:0 16px 36px rgba(14,42,71,.12), inset 0 1px 0 rgba(255,255,255,.7)}
+.stat:hover{box-shadow:0 16px 36px rgba(12,46,42,.12), inset 0 1px 0 rgba(255,255,255,.7)}
 .stat__ico{box-shadow:inset 0 0 0 1px rgba(22,82,140,.12), 0 6px 14px rgba(22,82,140,.12)}
 .stat__val{color:var(--ink);text-shadow:0 1px 0 rgba(255,255,255,.6)}
 
@@ -107,7 +107,7 @@
    精修·三：统计图标渐变白 + 内容区柔和底（追加层）
    =========================================================== */
 /* 统计图标升级为品牌渐变 + 白色图标 */
-.stat__ico{background:linear-gradient(135deg,var(--brand),var(--brand-strong));color:#fff;box-shadow:0 8px 18px rgba(15,63,110,.30), inset 0 1px 0 rgba(255,255,255,.25)}
+.stat__ico{background:linear-gradient(135deg,var(--brand),var(--brand-strong));color:#fff;box-shadow:0 8px 18px rgba(12,46,42,.30), inset 0 1px 0 rgba(255,255,255,.25)}
 /* 内容区柔和渐变底 */
 .content{background:linear-gradient(180deg,#fbfdff 0%, #eef3f9 100%)}
 /* 卡片悬浮过渡更顺滑 */

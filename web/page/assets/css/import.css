@@ -36,7 +36,7 @@ h1::after{content:"";position:absolute;left:50%;transform:translateX(-50%);botto
 .upload-btn{
   display:inline-block;padding:10px 22px;border-radius:var(--radius-sm);font-size:14px;font-weight:600;
   color:#fff;background:linear-gradient(135deg,var(--brand),var(--brand-strong));
-  box-shadow:0 8px 18px rgba(15,63,110,.22);transition:.2s;
+  box-shadow:0 8px 18px rgba(12,46,42,.22);transition:.2s;
 }
 .upload-area:hover .upload-btn{filter:brightness(1.06)}
 .upload-tip{margin-top:12px;font-size:12px;color:#9aa7b8}
@@ -52,7 +52,7 @@ h1::after{content:"";position:absolute;left:50%;transform:translateX(-50%);botto
   background:#fff;border:1px solid var(--border);border-radius:14px;padding:14px 18px;margin-bottom:12px;
   box-shadow:var(--shadow-sm);transition:.2s;
 }
-.file-item:hover{border-color:var(--border-strong);box-shadow:0 8px 22px rgba(14,42,71,.08)}
+.file-item:hover{border-color:var(--border-strong);box-shadow:0 8px 22px rgba(12,46,42,.08)}
 .file-info{display:flex;flex-direction:column;min-width:0}
 .file-name{font-weight:600;color:var(--ink);font-size:14px;word-break:break-all;display:flex;align-items:center;gap:8px}
 .file-name::before{content:"";width:8px;height:8px;border-radius:2px;flex:0 0 auto;background:linear-gradient(135deg,var(--brand),var(--gold))}
@@ -100,12 +100,12 @@ h1::after{content:"";position:absolute;left:50%;transform:translateX(-50%);botto
 @keyframes borderFlow{0%{background-position:0 0}100%{background-position:200px 0}}
 .upload-icon{animation:iconPulse 2.6s ease-in-out infinite}
 @keyframes iconPulse{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
-.upload-btn{box-shadow:0 10px 22px rgba(15,63,110,.26), inset 0 1px 0 rgba(255,255,255,.2)}
+.upload-btn{box-shadow:0 10px 22px rgba(12,46,42,.26), inset 0 1px 0 rgba(255,255,255,.2)}
 
 /* 文件卡片：左侧状态色条 + 悬浮抬升 */
 .file-item{position:relative;overflow:hidden;box-shadow:var(--shadow-sm), inset 0 1px 0 rgba(255,255,255,.7)}
 .file-item::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:linear-gradient(180deg,var(--brand),var(--brand-strong))}
-.file-item:hover{transform:translateY(-2px);box-shadow:0 12px 26px rgba(14,42,71,.10)}
+.file-item:hover{transform:translateY(-2px);box-shadow:0 12px 26px rgba(12,46,42,.10)}
 .file-item:has(.status-uploading)::before{background:linear-gradient(180deg,#d9a23f,#c2872f)}
 .file-item:has(.status-processing)::before{background:linear-gradient(180deg,#14958a,#0f766e)}
 .file-item:has(.status-completed)::before{background:linear-gradient(180deg,#36a878,#2c8f66)}
@@ -115,13 +115,13 @@ h1::after{content:"";position:absolute;left:50%;transform:translateX(-50%);botto
 .status-badge{padding:6px 14px 6px 12px;letter-spacing:.3px}
 
 /* 进度条更高级 */
-.progress-bar-container{background:#eaf0f6;box-shadow:inset 0 1px 2px rgba(14,42,71,.12)}
+.progress-bar-container{background:#e6f4f1;box-shadow:inset 0 1px 2px rgba(12,46,42,.12)}
 .progress-bar{background:linear-gradient(90deg,var(--brand),var(--brand-2))}
 /* ===========================================================
    精修·三：上传图标焦点化 + 内容区柔和底（追加层）
    =========================================================== */
 /* 上传图标升级为渐变圆角方块 + 白色图标，成为视觉焦点 */
-.upload-icon{width:72px;height:72px;border-radius:20px;background:linear-gradient(135deg,#14958a,#0b5650);color:#fff;box-shadow:0 14px 30px rgba(15,63,110,.32), inset 0 1px 0 rgba(255,255,255,.25)}
+.upload-icon{width:72px;height:72px;border-radius:20px;background:linear-gradient(135deg,#14958a,#0b5650);color:#fff;box-shadow:0 14px 30px rgba(12,46,42,.32), inset 0 1px 0 rgba(255,255,255,.25)}
 .upload-icon svg{width:34px;height:34px}
 /* 内容区柔和渐变底 */
 .container{background:linear-gradient(180deg,#fbfdff 0%, #eef3f9 100%)}

@@ -226,7 +226,7 @@ body{
 .appbar__bell{position:relative;width:36px;height:36px;border-radius:50%;border:1px solid rgba(255,255,255,.16);background:rgba(255,255,255,.08);color:#fff;cursor:pointer;display:grid;place-items:center;transition:.2s var(--ease);flex:0 0 auto}
 .appbar__bell:hover{background:rgba(255,255,255,.16)}
 .appbar__bell svg{width:18px;height:18px}
-.appbar__dot{position:absolute;top:8px;right:9px;width:8px;height:8px;border-radius:50%;background:#e2574f;box-shadow:0 0 0 2px rgba(14,42,71,.9)}
+.appbar__dot{position:absolute;top:8px;right:9px;width:8px;height:8px;border-radius:50%;background:#e2574f;box-shadow:0 0 0 2px rgba(12,46,42,.9)}
 .appbar__user{display:flex;align-items:center;gap:8px;border:1px solid rgba(255,255,255,.16);background:rgba(255,255,255,.06);border-radius:999px;padding:4px 12px 4px 4px;cursor:pointer;color:#fff;transition:.2s var(--ease);position:relative;font-family:inherit}
 .appbar__user:hover{background:rgba(255,255,255,.14)}
 .appbar__avatar{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;font-size:12px;font-weight:700;color:#ffb499;background:linear-gradient(135deg,#13635b,#0a2421);box-shadow:inset 0 0 0 1px rgba(239,125,86,.5)}
