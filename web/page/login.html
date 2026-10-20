@@ -6,7 +6,7 @@
   <title>登录 · 鹏至智库</title>
   <!-- 复用主题设计令牌（CSS 变量），保证与系统内页视觉一致 -->
   <link rel="stylesheet" href="assets/css/theme.css?v=20261017" />
-  <link rel="stylesheet" href="assets/css/login.css?v=20261018" />
+  <link rel="stylesheet" href="assets/css/login.css?v=20261019" />
   <!-- 主题防闪烁：与全站一致，登录页默认浅色，避免深色/浅色切换瞬间白闪 -->
   <script>
     (function(){
@@ -80,6 +80,40 @@
         </button>
       </form>
 
+      <!-- 演示账号一键体验：测试环境下无需注册，三角色凭据可直接登录 -->
+      <div class="login-demo" id="loginDemo">
+        <div class="login-demo__hd">
+          <span class="login-demo__icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 3 14h7l-1 8 10-12h-7l1-8z"/></svg>
+          </span>
+          <div>
+            <div class="login-demo__title">演示账号 · 三角色一键体验</div>
+            <div class="login-demo__sub">测试环境无需注册，点击对应角色直接登录</div>
+          </div>
+        </div>
+        <div class="login-demo__list">
+          <div class="login-demo__card">
+            <span class="login-demo__role login-demo__role--admin">管理员</span>
+            <span class="login-demo__email">admin@pengzhi.internal</span>
+            <span class="login-demo__pass">admin123</span>
+            <button type="button" class="login-demo__login" data-email="admin@pengzhi.internal" data-pass="admin123">一键登录 →</button>
+          </div>
+          <div class="login-demo__card">
+            <span class="login-demo__role login-demo__role--analyst">分析师</span>
+            <span class="login-demo__email">analyst@pengzhi.internal</span>
+            <span class="login-demo__pass">analyst123</span>
+            <button type="button" class="login-demo__login" data-email="analyst@pengzhi.internal" data-pass="analyst123">一键登录 →</button>
+          </div>
+          <div class="login-demo__card">
+            <span class="login-demo__role login-demo__role--pr">运营</span>
+            <span class="login-demo__email">pr@pengzhi.internal</span>
+            <span class="login-demo__pass">pr123</span>
+            <button type="button" class="login-demo__login" data-email="pr@pengzhi.internal" data-pass="pr123">一键登录 →</button>
+          </div>
+        </div>
+        <p class="login-demo__hint">点击角色右侧「登录」即可进入，无需注册</p>
+      </div>
+
       <div class="login-foot login-foot--entry">还没有账号？<a class="login-link" href="/register.html?v=20261013">注册账号</a></div>
 
       <div class="login-foot">© 2026 鹏至智库 · 企业知识中枢 v1.0.0+20261013</div>
@@ -89,7 +123,7 @@
   <script>
     // 登录页逻辑（前端演示，无后端账号校验；仅做会话态登记与跳转）
     (function () {
-      var SERVICES = window.KB_SERVICES || { import: "http://127.0.0.1:8100" };
+      var SERVICES = window.KB_SERVICES || { import: location.protocol + "//" + location.hostname + ":8100", query: location.protocol + "//" + location.hostname + ":8111" };
       var VER = "20261013";
 
       // 读取当前登录态（localStorage / sessionStorage 任一存在即可）
@@ -126,6 +160,17 @@
       var fieldPass = document.getElementById('fieldPass');
       var errUser = document.getElementById('errUser');
       var errPass = document.getElementById('errPass');
+
+      // 演示账号：将三角色（管理员 / 分析师 / 运营）写入本地账号表，覆盖旧演示账号，
+      // 保证「一键登录」按钮填入的凭据与账号表一致（密码经 enc 编码，与提交校验逻辑对齐）
+      var DEMO_ACCTS = [
+        { email: 'admin@pengzhi.internal',   name: '管理员', pass: enc('admin123') },
+        { email: 'analyst@pengzhi.internal', name: '分析师', pass: enc('analyst123') },
+        { email: 'pr@pengzhi.internal',       name: '运营',   pass: enc('pr123') }
+      ];
+      (function seedDemo() {
+        try { localStorage.setItem('kb_accounts', JSON.stringify(DEMO_ACCTS)); } catch (e) {}
+      })();
 
       var EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -168,6 +213,20 @@
         errEl.hidden = false;
       });
 
+      // 演示账号一键体验：填充对应角色凭据并触发登录
+      var demoBtns = document.querySelectorAll('.login-demo__login');
+      Array.prototype.forEach.call(demoBtns, function (b) {
+        b.addEventListener('click', function () {
+          userEl.value = b.getAttribute('data-email') || '';
+          passEl.value = b.getAttribute('data-pass') || '';
+          clearFieldError(fieldUser, errUser);
+          clearFieldError(fieldPass, errPass);
+          errEl.hidden = true;
+          if (form.requestSubmit) form.requestSubmit();
+          else form.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
+        });
+      });
+
       // 按钮 loading 态：禁用 + 旋转图标
       function setLoading(on) { submitBtn.classList.toggle('is-loading', on); submitBtn.disabled = on; }
 
@@ -184,6 +243,7 @@
         setTimeout(function () {
           // 校验：若系统中已存在注册账号，则必须邮箱+密码匹配；否则（演示环境）放行任意账号
           var matchedName = '';
+          var matchedRole = 'admin';
           var accounts = getAccounts();
           if (accounts.length > 0) {
             var hit = null;
@@ -194,9 +254,10 @@
               return;
             }
             matchedName = hit.name || '';
+            matchedRole = hit.role || 'admin';
           }
-          // 登记会话态：记住我 -> 持久化；否则仅当前会话有效
-          var payload = JSON.stringify({ user: u, name: matchedName, ts: Date.now() });
+          // 登记会话态：记住我 -> 持久化；否则仅当前会话有效（携带角色，供后续 RBAC 使用）
+          var payload = JSON.stringify({ user: u, name: matchedName, role: matchedRole, ts: Date.now() });
           try {
             if (remember.checked) localStorage.setItem('kb_logged_in', payload);
             else sessionStorage.setItem('kb_logged_in', payload);
