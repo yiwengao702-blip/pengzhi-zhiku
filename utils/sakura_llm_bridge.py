@@ -18,15 +18,28 @@ from langchain_core.messages import AIMessage, AIMessageChunk, BaseMessage
 from langchain_core.outputs import ChatGeneration, ChatGenerationChunk, ChatResult
 
 # [融合] 复用共享底座的 LLM 网关，消除自写 OpenAI 客户端
+# [部署兼容] 云端部署环境里没有 sakura_platform 仓库，也就装不上 editable 的 sakura_base。
+#   为此把 sakura_base.llm（仅 gateway/types 两个纯标准库文件）vendor 进本项目 vendor/ 目录，
+#   本机开发仍优先使用已安装的完整底座，缺包时自动回落到 vendor 副本，实现「部署零外部依赖」。
 try:
     from sakura_base.llm.gateway import LLMGateway
     from sakura_base.llm.types import ChatMessage
-except ImportError as _imp_err:
-    raise RuntimeError(
-        "knowledge_base 现已依赖 sakura_base 共享底座，请先安装：\n"
-        "  pip install -e <sakura_platform>/packages/sakura_base[web]\n"
-        f"原始错误：{_imp_err}"
-    ) from _imp_err
+except ImportError:
+    import sys as _sys
+    from pathlib import Path as _Path
+
+    _vendor_dir = _Path(__file__).resolve().parents[1] / "vendor"
+    if _vendor_dir.is_dir() and str(_vendor_dir) not in _sys.path:
+        _sys.path.append(str(_vendor_dir))
+    try:
+        from sakura_base.llm.gateway import LLMGateway
+        from sakura_base.llm.types import ChatMessage
+    except ImportError as _imp_err:
+        raise RuntimeError(
+            "knowledge_base 需要 sakura_base 共享底座（或项目内 vendor/sakura_base 副本），请先安装：\n"
+            "  pip install -e <sakura_platform>/packages/sakura_base[web]\n"
+            f"原始错误：{_imp_err}"
+        ) from _imp_err
 
 
 class SakuraGatewayChatModel(BaseChatModel):

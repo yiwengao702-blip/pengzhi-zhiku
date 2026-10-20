@@ -1,9 +1,5 @@
-# [兼容修复] 必须在任何间接依赖 torchvision 的库（FlagEmbedding / transformers 等）之前，
-# 先干净地导入 torch / torchvision，使其内部 meta 算子（如 roi_align）一次性注册并缓存，
-# 避免后续被重复注册而抛出 "already a kernel registered ... roi_align" 的 RuntimeError
-# （torch 2.11 + torchvision 0.26 在 transformers 间接导入时偶发）。
-import torch  # noqa: F401
-import torchvision  # noqa: F401
+# [轻量变体] 已移除 torch / torchvision 预导入：嵌入改走云端 API（见 utils/embedding_utils.py），
+# 本地不再加载任何神经模型，原先为规避 torchvision meta 算子重复注册而做的兼容导入不再需要。
 
 import os
 import shutil
@@ -593,7 +589,34 @@ async def get_task_progress(task_id: str):
 # 7. 静态资源挂载：前端独立的 CSS/JS 资产以相对路径 assets/... 引用，
 #    页面与资源同处 web/page 下（Vite 风格的 dist 布局），既支持 FastAPI 托管，
 #    也支持 file:// 直接打开或任意 docroot 下的静态服务器，彻底避免绝对路径 404。
+# 静态资源缓存策略：显式声明「每次回源校验」。
+# 背景：Starlette 的 StaticFiles 只发 ETag/Last-Modified、不发 Cache-Control，
+# 浏览器据此按启发式规则长时间复用旧 JS，出现过「已修复 app-config.js 但用户仍走
+# 127.0.0.1」的假故障。加 no-cache 后浏览器每次带 If-None-Match 回源，未变 304、变了立即生效。
+@app.middleware("http")
+async def _static_no_cache(request, call_next):
+    response = await call_next(request)
+    _p = request.url.path
+    if _p.endswith((".js", ".css", ".html")) or _p == "/":
+        response.headers["Cache-Control"] = "no-cache, must-revalidate"
+    return response
+
+
 app.mount("/assets", StaticFiles(directory=str(Path(__file__).absolute().parent.parent / "page" / "assets")), name="assets")
+
+# 8. 对象存储静态挂载（轻量变体）：MinIO 已换成本地目录（utils/minio_utils.LocalObjectStore）。
+#    图片 URL 形如 http://<MINIO_ENDPOINT>/<bucket>/<object>，这里把 /<bucket> 映射到本地目录，
+#    使导入文档里的图片在问答页可直接显示（无需额外起 MinIO 容器）。
+try:
+    _bucket_name = minio_config.bucket_name or "knowledge-base"
+    _objects_root = Path(os.getenv("KB_OBJECT_DIR",
+                                   os.path.join(os.getenv("KB_DATA_DIR", "./data"), "objects")))
+    _bucket_dir = _objects_root / _bucket_name
+    _bucket_dir.mkdir(parents=True, exist_ok=True)
+    app.mount(f"/{_bucket_name}", StaticFiles(directory=str(_bucket_dir)), name="kb-objects")
+    logger.info(f"对象存储静态目录已挂载：/{_bucket_name} -> {_bucket_dir}")
+except Exception as _e:  # noqa: BLE001
+    logger.error(f"对象存储静态目录挂载失败（图片可能无法显示）：{_e}")
 
 
 if __name__ == "__main__":
@@ -605,6 +628,6 @@ if __name__ == "__main__":
     # 启动uvicorn服务，绑定本地IP，关闭自动重载（生产环境建议用workers多进程）
     uvicorn.run(
         app=app,
-        host="127.0.0.1",  # 仅本地访问，生产环境改为0.0.0.0（允许所有IP访问）
+        host=os.getenv("KB_HOST", "127.0.0.1"),  # KB_HOST 可配：容器部署需设 0.0.0.0
         port=_import_port  # 服务端口（来自环境变量，默认 8000）
     )

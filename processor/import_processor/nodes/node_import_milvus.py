@@ -9,7 +9,7 @@ from config.milvus_config import milvus_config
 from processor.import_processor.base import BaseNode, setup_logging
 from processor.import_processor.exceptions import StateFieldError, MilvusError
 from processor.import_processor.state import ImportGraphState
-from utils.milvus_utils import get_milvus_client, escape_milvus_string
+from utils.milvus_utils import get_milvus_client, escape_milvus_string, is_lite_mode, dense_index_type
 
 # 导入milvus
 class NodeImportMilvus(BaseNode):
@@ -147,21 +147,32 @@ class NodeImportMilvus(BaseNode):
 
         # 3. 创建索引
         index_params = milvus_client.prepare_index_params()
-        # 稠密向量索引：AUTOINDEX自动选最优索引类型+余弦相似度（语义检索常用）
+        # [轻量变体] Milvus Lite 仅支持 FLAT 索引，且不接受 AUTOINDEX / 稀疏索引的调优参数，
+        # 因此这里按运行模式分支：Lite 走 FLAT + 精简参数，服务端保持原 AUTOINDEX 行为。
+        _lite = is_lite_mode()
+        # 稠密向量索引：服务端 AUTOINDEX 自动选最优索引类型+余弦相似度（语义检索常用）
         index_params.add_index(
             field_name="dense_vector",
             index_name="dense_vector_index",
-            index_type="AUTOINDEX",
+            index_type=dense_index_type(),
             metric_type="COSINE"
         )
-        # 稀疏向量索引：专用SPARSE_INVERTED_INDEX+内积（IP），适配稀疏向量检索
-        index_params.add_index(
-            field_name="sparse_vector",
-            index_name="sparse_inverted_index",
-            index_type="SPARSE_INVERTED_INDEX",
-            metric_type="IP",
-            params={"inverted_index_algo": "DAAT_MAXSCORE", "normalize": True, "quantization": "none"}
-        )
+        # 稀疏向量索引：专用 SPARSE_INVERTED_INDEX+内积（IP），适配稀疏向量检索
+        if _lite:
+            index_params.add_index(
+                field_name="sparse_vector",
+                index_name="sparse_inverted_index",
+                index_type="SPARSE_INVERTED_INDEX",
+                metric_type="IP"
+            )
+        else:
+            index_params.add_index(
+                field_name="sparse_vector",
+                index_name="sparse_inverted_index",
+                index_type="SPARSE_INVERTED_INDEX",
+                metric_type="IP",
+                params={"inverted_index_algo": "DAAT_MAXSCORE", "normalize": True, "quantization": "none"}
+            )
 
         # 创建集合
         milvus_client.create_collection(

@@ -8,11 +8,19 @@ JSON 格式化工具模块
 
 
 from typing import Any, Dict
-from bson import ObjectId
 import json
 from datetime import datetime, date
 from decimal import Decimal
 from uuid import UUID
+
+# [轻量变体] 历史记录已由 MongoDB 换为 SQLite，不再强制依赖 bson。
+# 若环境中仍装有 pymongo（本地开发），ObjectId 分支照常生效；未安装时用空壳类占位，
+# isinstance 永远为 False，序列化行为与其他类型一致，不影响既有调用方。
+try:
+    from bson import ObjectId
+except ImportError:  # pragma: no cover - 部署环境走这里
+    class ObjectId:  # type: ignore[no-redef]
+        """占位类型：仅在未安装 pymongo 时用于 isinstance 判定。"""
 
 class CustomJSONEncoder(json.JSONEncoder):
     """

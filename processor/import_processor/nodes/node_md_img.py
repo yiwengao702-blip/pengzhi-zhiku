@@ -7,11 +7,12 @@ import re
 import time
 from collections import deque
 from pathlib import Path
-from typing import Tuple, List, Deque, Dict
+from typing import Any, Tuple, List, Deque, Dict
 
 from langchain_openai import ChatOpenAI
-from minio import Minio
-from minio.deleteobjects import DeleteObject
+
+# [轻量变体] 不再依赖 minio SDK：对象存储已换成本地文件系统实现
+# （utils/minio_utils.LocalObjectStore），接口保持同一子集，故此处仅去掉框架类型依赖。
 
 from config.lm_config import lm_config
 from config.minio_config import minio_config
@@ -164,7 +165,7 @@ class NodeMDImg(BaseNode):
                 image_info[image_file] = (summary, url)
         return image_info
 
-    def _upload_images_batch(self, minio_client: Minio, upload_dir: str, target_images: List[Tuple]) -> Dict[str, str]:
+    def _upload_images_batch(self, minio_client: Any, upload_dir: str, target_images: List[Tuple]) -> Dict[str, str]:
         """
         批量上传待处理图片至MinIO，返回图片文件名与访问URL的映射关系
         :param minio_client: 初始化完成的MinIO客户端对象
@@ -178,7 +179,7 @@ class NodeMDImg(BaseNode):
             urls[img_file] = self._upload_to_minio(minio_client, img_path, object_name)
         return urls
 
-    def _upload_to_minio(self, minio_client: Minio, local_path: str, object_name: str) -> str | None:
+    def _upload_to_minio(self, minio_client: Any, local_path: str, object_name: str) -> str | None:
         """
         将单张本地图片上传至MinIO对象存储，并返回公网可访问URL
         :param minio_client: 初始化完成的MinIO客户端对象
@@ -203,13 +204,13 @@ class NodeMDImg(BaseNode):
         except Exception as e:
             self.logger.error(f"上传图片失败：{local_path}")
 
-    def _clean_minio_dir(self, minio_client: Minio, update_dir: str) -> None:
+    def _clean_minio_dir(self, minio_client: Any, update_dir: str) -> None:
         update_dir = update_dir.strip("/")
         try:
             # 1. 获取将要被删除的图片列表
             objects_to_delete = minio_client.list_objects(minio_config.bucket_name, update_dir, recursive=True)
 
-            delete_list = [DeleteObject(obj.object_name) for obj in objects_to_delete]
+            delete_list = [obj.object_name for obj in objects_to_delete]
             errors = minio_client.remove_objects(
                 minio_config.bucket_name,
                 #需要一个 [DeleteObject]

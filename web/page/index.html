@@ -32,7 +32,7 @@
   })();
   </script>
   <!-- 全局服务地址 + 登录守卫 + 用户菜单/搜索/退出登录逻辑（登录后才会放行门户） -->
-  <script src="assets/js/app-config.js?v=20261013"></script>
+  <script src="assets/js/app-config.js?v=20261019b"></script>
 </head>
 <body>
   <div class="appshell">
@@ -144,7 +144,7 @@
   <script>
   /* 门户首页：拉取真实统计，填充「平台数据」快捷卡片 */
   (function(){
-    var API = (window.KB_SERVICES && window.KB_SERVICES.import) || "http://127.0.0.1:8100";
+    var API = (window.KB_SERVICES && window.KB_SERVICES.import) || (location.protocol + "//" + location.hostname + ":8100");
     var box = document.getElementById('quickstats');
     if(!box) return;
     fetch(API + '/stats', { cache: 'no-store' })

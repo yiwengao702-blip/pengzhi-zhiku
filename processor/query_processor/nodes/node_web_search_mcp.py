@@ -25,15 +25,23 @@ class NodeWebSearchMcp(NodeBase):
 
         query = state.get("rewritten_query", "")
         docs = []
+        # [轻量部署] 未配置阿里百炼 MCP 密钥时，联网搜索是「不可用能力」而非「故障」：
+        # 直接跳过并记录一次 INFO，避免每次都发起必然失败的鉴权请求。
+        _mcp_ready = bool(mcp_config.api_key and mcp_config.mcp_base_url)
+        if query and not _mcp_ready:
+            logger.info("未配置 MCP_API_KEY，跳过联网搜索，仅使用本地知识库检索")
         # 如果没有查询内容，直接返回
-        if query:
+        if query and _mcp_ready:
             # 兼容事件循环场景：如果当前已有运行中的事件循环（如 FastAPI async 端点），
             # 则通过独立线程执行 asyncio.run() 以避免 "cannot be called from a running event loop" 错误
             try:
                 result = self._run_async_safe(self._mcp_call(query))
-            except Exception as e:
+            except (Exception, asyncio.CancelledError) as e:
                 # [健壮修复] Web 搜索只是问答的增强项，外部 MCP 鉴权/网络失败（如 401）时
                 # 不应拖垮整条问答链路；捕获后降级为空结果，继续走 KB 检索 + LLM 回答。
+                # 说明：MCP 客户端在超时/清理阶段会抛 asyncio.CancelledError（属 BaseException，
+                # 不被 except Exception 捕获），若不显式处理会让整个 LangGraph 分支被取消，
+                # 表现为「检索成功但答案为空」，因此这里一并捕获。
                 logger.warning(f"Web 搜索 MCP 调用失败，已降级跳过: {e}")
                 result = None
             if result: # 判断是否从web搜索里面得到结果

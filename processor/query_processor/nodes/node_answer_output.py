@@ -38,7 +38,59 @@ def _clean_answer(text: str) -> str:
         text = text.split("</think>")[-1]
     # 3) 清除可能残留的裸 <think> 标记
     text = re.sub(r"<think>", "", text, flags=re.IGNORECASE)
+    # 4) 去掉「空图片区块」与提示词占位符回显
+    text = _clean_image_block(text)
     return text.strip()
+
+
+def _clean_image_block(text: str) -> str:
+    """
+    清洗答案末尾的图片区块。
+
+    背景：提示词要求模型在需要配图时输出「【图片】+ 每行一个 URL」的结构，
+    但小模型容易在**没有真实图片**时也照抄格式，甚至把提示词里的占位符
+    （如 `<本地图片1_url>`）和括号说明一并回显到答案里，前端看起来像脏数据。
+    这里做三件事：
+      1) 若【图片】区块内没有任何真实 http(s) 链接 → 整块丢弃；
+      2) 有真实链接则只保留链接行，重建整洁的图片区块；
+      3) 兜底清掉漏出的占位符与提示词回显片段。
+    """
+    if not text:
+        return text
+    if "【图片】" in text:
+        head, _, tail = text.partition("【图片】")
+        urls = re.findall(r"https?://[^\s<>\]\)]+", tail)
+        if urls:
+            # 去重且保持原顺序
+            uniq = list(dict.fromkeys(urls))
+            text = head.rstrip() + "\n\n【图片】\n" + "\n".join(uniq)
+        else:
+            text = head.rstrip()
+    # 清掉形如 <本地图片1_url> / <图片URL1> 的占位符
+    text = re.sub(r"<[^>\n]{0,20}(?:url|URL)[^>\n]{0,10}>", "", text)
+    # 清掉「（如果有关联图片…）」这类提示词回显
+    text = re.sub(r"（如果有关联图片[^）]{0,60}）", "", text)
+    return text.strip()
+
+
+def _filter_answer_images(text: str, allowed_urls) -> str:
+    """
+    二次收紧：把答案【图片】区块里的链接与「检索结果中真实存在的图片」取交集。
+
+    背景：小模型被要求输出图片区块时，即使上下文里没有任何图片，也会编造
+    `https://example.com/xxx.jpg` 这类看似合理的假链接。图片只能来自知识库切片，
+    因此这里以 _extract_images_from_docs() 得到的真实清单为准，非清单内的一律删除；
+    交集为空则整块去掉，保证前端不会渲染出 404 图片。
+    """
+    if not text or "【图片】" not in text:
+        return text
+    head, _, tail = text.partition("【图片】")
+    allowed = set(allowed_urls or [])
+    keep = [u for u in re.findall(r"https?://[^\s<>\]\)]+", tail) if u in allowed]
+    if keep:
+        uniq = list(dict.fromkeys(keep))
+        return (head.rstrip() + "\n\n【图片】\n" + "\n".join(uniq)).strip()
+    return head.rstrip()
 
 
 class NodeAnswerOutput(NodeBase):
@@ -92,6 +144,12 @@ class NodeAnswerOutput(NodeBase):
 
         # 阶段四： 提取图片URL（用于历史记录和前端展示）
         image_urls = self._extract_images_from_docs(state.get("reranked_docs") or [])
+        # [图片防编造] 只保留检索结果里真实存在的图片链接，模型自造的 example.com 之类全部剔除
+        if state.get("answer"):
+            state["answer"] = _filter_answer_images(state["answer"], image_urls)
+            # 关键：_step_3 生成时就把答案写进了任务结果，此处必须回写过滤后的版本，
+            # 否则 /query 接口仍会返回带编造图片链接的原始答案（流式 final 事件则取 state）。
+            set_task_result(state["session_id"], "answer", state["answer"])
         # 以上跟你这个问题相关的配图 就提取出来了
         # 阶段五：把答案写入到mongodb的history中
         if state.get("answer"):

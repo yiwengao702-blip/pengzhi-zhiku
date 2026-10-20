@@ -15,7 +15,7 @@ from processor.import_processor.base import BaseNode, setup_logging
 from processor.import_processor.exceptions import StateFieldError
 from processor.import_processor.state import ImportGraphState
 from utils.embedding_utils import generate_embeddings
-from utils.milvus_utils import get_milvus_client, escape_milvus_string
+from utils.milvus_utils import get_milvus_client, escape_milvus_string, is_lite_mode, dense_index_type
 
 
 # # --- 配置参数 (Configuration) # --- 配置参数 (Configuration) ---
@@ -367,34 +367,41 @@ class NodeItemNameRecognition(BaseNode):
 
         # 3. 构建索引参数（提升向量检索性能）
         index_params = milvus_client.prepare_index_params()
-        # 为稠密向量创建索引（IVF_FLAT：兼容性好，适合小数据量）
-        # 核心是 “先聚类分桶、再桶内暴力精确检索”。
-        index_params.add_index(
-            field_name="dense_vector",  # 字段名
-            index_name="dense_vector_index",  # 索引名
-            index_type="IVF_FLAT",  # 索引类型（兼容所有Milvus版本）
-            metric_type="COSINE",  # 相似度计算方式（余弦相似度）
-            params={"nlist": 128}  # 聚类数（影响检索精度/速度）
-        )
+        # [轻量变体] Milvus Lite 只支持 FLAT，且不接受 nlist 等聚类参数，
+        # 故按运行模式分支；服务端仍沿用 IVF_FLAT + nlist=128（小数据量够用）。
+        if is_lite_mode():
+            index_params.add_index(
+                field_name="dense_vector",
+                index_name="dense_vector_index",
+                index_type="FLAT",
+                metric_type="COSINE"
+            )
+        else:
+            # 为稠密向量创建索引（IVF_FLAT：兼容性好，适合小数据量）
+            # 核心是 “先聚类分桶、再桶内暴力精确检索”。
+            index_params.add_index(
+                field_name="dense_vector",  # 字段名
+                index_name="dense_vector_index",  # 索引名
+                index_type="IVF_FLAT",  # 索引类型（兼容所有Milvus版本）
+                metric_type="COSINE",  # 相似度计算方式（余弦相似度）
+                params={"nlist": 128}  # 聚类数（影响检索精度/速度）
+            )
 
         # 为稀疏向量创建索引（SPARSE_INVERTED_INDEX：稀疏向量专用索引）
+        _sparse_extra = {} if is_lite_mode() else {
+            "inverted_index_algo": "DAAT_MAXSCORE", "normalize": True, "quantization": "none"
+        }
         index_params.add_index(
             field_name="sparse_vector",  # 字段名
             index_name="sparse_vector_index",  # 索引名
             index_type="SPARSE_INVERTED_INDEX",  # 索引类型
             metric_type="IP",  # 相似度计算方式（内积）
-            params={
-                "inverted_index_algo": "DAAT_MAXSCORE",
-                # 高效的稀疏检索算法
-
-                "normalize": True,
-                # ↑ L2 归一化，让内积 (IP) 等价于余弦相似度
-
-                "quantization": "none"
-                # ↑ 关闭量化，保持原始精度：模型生成的向量已经压缩的一半的精度了（BGE_FP16=1），这里就不再压缩了
-                # "quantization": "none" → 存储原始向量，不压缩
-                # "quantization": "sq8" → 存储压缩后的向量（8-bit 量化
-            })
+            params=_sparse_extra
+        )
+        # 服务端（非 Lite）模式下额外启用稀疏索引调优参数：
+        #   inverted_index_algo=DAAT_MAXSCORE 高效稀疏检索算法
+        #   normalize=True 让内积(IP)等价于余弦相似度
+        #   quantization=none 关闭量化保持原始精度（向量已在上游做过精度压缩）
 
         # 4. 创建集合（Schema + 索引）
         milvus_client.create_collection(

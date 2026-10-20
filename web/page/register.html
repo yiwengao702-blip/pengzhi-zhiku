@@ -89,7 +89,7 @@
   <script>
     // 注册逻辑（前端演示，账号仅存于浏览器 localStorage，非安全后端存储）
     (function () {
-      var SERVICES = window.KB_SERVICES || { import: "http://127.0.0.1:8100" };
+      var SERVICES = window.KB_SERVICES || { import: location.protocol + "//" + location.hostname + ":8100", query: location.protocol + "//" + location.hostname + ":8111" };
       var VER = "20261013";
 
       function getLogin() {

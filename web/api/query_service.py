@@ -2,13 +2,9 @@
 """
 查询流程的接口定义
 
-[兼容修复] 必须在任何间接依赖 torchvision 的库（FlagEmbedding / transformers 等）之前，
-先干净地导入 torch / torchvision，使其内部 meta 算子（如 roi_align）一次性注册并缓存，
-避免后续被重复注册而抛出 "already a kernel registered ... roi_align" 的 RuntimeError
-（torch 2.11 + torchvision 0.26 在 transformers 间接导入时偶发）。
+[轻量变体] 已移除 torch / torchvision 预导入：嵌入改走云端 API（见 utils/embedding_utils.py），
+本地不再加载任何神经模型，原先为规避 torchvision meta 算子重复注册而做的兼容导入不再需要。
 """
-import torch  # noqa: F401
-import torchvision  # noqa: F401
 
 import os
 import sys
@@ -369,6 +365,19 @@ async def health():
 # 静态资源挂载：前端独立的 CSS/JS 资产以相对路径 assets/... 引用，
 # 页面与资源同处 web/page 下（Vite 风格的 dist 布局），既支持 FastAPI 托管，
 # 也支持 file:// 直接打开或任意 docroot 下的静态服务器，彻底避免绝对路径 404。
+# 静态资源缓存策略：显式声明「每次回源校验」。
+# 背景：Starlette 的 StaticFiles 只发 ETag/Last-Modified、不发 Cache-Control，
+# 浏览器据此按启发式规则长时间复用旧 JS，出现过「已修复 app-config.js 但用户仍走
+# 127.0.0.1」的假故障。加 no-cache 后浏览器每次带 If-None-Match 回源，未变 304、变了立即生效。
+@app.middleware("http")
+async def _static_no_cache(request, call_next):
+    response = await call_next(request)
+    _p = request.url.path
+    if _p.endswith((".js", ".css", ".html")) or _p == "/":
+        response.headers["Cache-Control"] = "no-cache, must-revalidate"
+    return response
+
+
 app.mount("/assets", StaticFiles(directory=str(Path(__file__).absolute().parent.parent / "page" / "assets")), name="assets")
 
 
@@ -376,4 +385,4 @@ if __name__ == "__main__":
     # 端口与 main.py 保持一致：优先读取 .env 中的 KB_PORT_QUERY（默认 8001，
     # 当前因 8001 被「清衡舆情分析平台」占用而改为 8101），避免直接运行与一键启动端口不一致
     _query_port = int(os.getenv("KB_PORT_QUERY", 8001))
-    uvicorn.run(app, host="127.0.0.1", port=_query_port)
+    uvicorn.run(app, host=os.getenv("KB_HOST", "127.0.0.1"), port=_query_port)

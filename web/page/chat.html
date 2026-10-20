@@ -7,11 +7,11 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate, max-age=0" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>鹏至智库知识库</title>
+  <title>鹏至智库 · 智能问答</title>
   <link rel="stylesheet" href="assets/css/theme.css?v=20261017">
-  <link rel="stylesheet" href="assets/css/chat.css?v=20261019">
+  <link rel="stylesheet" href="assets/css/chat.css?v=20261021">
   <!-- 全局服务地址配置（端口单一数据源，须与 .env 的 KB_PORT_* 一致） -->
-  <script src="assets/js/app-config.js?v=20261012"></script>
+  <script src="assets/js/app-config.js?v=20261019b"></script>
   <script>
   /* 主题防闪烁：在 <body> 绘制前根据 localStorage 预设 data-theme */
   (function(){
@@ -155,7 +155,7 @@
   <script>
     // 后端基地址：从全局配置读取问答服务地址（与 .env 的 KB_PORT_QUERY=8101 一致）。
     // 端口统一收口在 assets/js/app-config.js，避免写死端口导致跨端口调用失败。
-    const API_BASE = window.KB_SERVICES.query;
+    const API_BASE = (window.KB_SERVICES && window.KB_SERVICES.query) || (location.protocol + "//" + location.hostname + ":8111");
     const chatEl = document.getElementById('chat');
     const inputEl = document.getElementById('input');
     const sendBtn = document.getElementById('send');

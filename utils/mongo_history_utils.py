@@ -1,87 +1,222 @@
 # utils/mongo_history_utils.py
+"""
+轻量历史会话存储（SQLite 实现）
 
-# 导入系统模块：用于读取环境变量
+【为什么改】
+原实现依赖 MongoDB（pymongo + 独立 mongod 进程，常驻约 200MB 内存）。
+轻量变体改为单文件 SQLite，零额外进程、零额外内存，接口与文档字段完全保持不变，
+上层（node_answer_output / node_item_name_confirm / query_service 等）无需改动。
+
+【兼容性保证】
+  * 对外函数签名与原 mongo 版逐字一致：save_chat_message / get_recent_messages /
+    clear_history / update_message_item_names / update_latest_assistant_meta /
+    get_history_mongo_tool。
+  * 记录主键仍返回 24 位十六进制字符串（与原 ObjectId 字符串形态一致），
+    前端把它当作不透明 ID 使用，不会因存储层更换而失效。
+  * get_recent_messages 的排序与 limit 语义与原实现一致（ts 升序取前 N 条）。
+
+【存储位置】
+  KB_HISTORY_DB 环境变量可覆盖，默认 <KB_DATA_DIR>/kb_history.db（KB_DATA_DIR 默认 ./data）。
+"""
+
+import json
 import os
-# 导入日志模块：用于记录程序运行日志（成功/失败/错误信息）
+import sqlite3
+import threading
+from datetime import datetime
+from typing import Any, Dict, List
 
 from tool.logger import logger
-# 导入类型注解模块：用于函数参数/返回值的类型提示，提升代码可读性和规范性
-from typing import List, Dict, Any, Optional
-# 导入时间模块：用于生成时间戳，记录对话的创建时间
-from datetime import datetime
-# 导入pymongo核心模块：MongoDB原生Python驱动，实现数据库连接和操作
-# ASCENDING：表示升序排序，用于MongoDB索引和查询排序
-from pymongo import MongoClient, ASCENDING
-# 导入bson的ObjectId：MongoDB默认的主键类型，用于唯一标识文档
-from bson import ObjectId
-# 导入dotenv模块：用于从.env文件加载环境变量，避免硬编码敏感配置（如MongoDB连接地址）
-from dotenv import load_dotenv
 
-# 加载.env文件中的环境变量，使os.getenv能读取到配置
-load_dotenv()
+_DEFAULT_DIR = os.getenv("KB_DATA_DIR", "./data")
+DB_PATH = os.getenv("KB_HISTORY_DB") or os.path.join(_DEFAULT_DIR, "kb_history.db")
 
-# 链接MongoDB工具类
+_SCHEMA = """
+CREATE TABLE IF NOT EXISTS chat_message (
+    id              TEXT PRIMARY KEY,           -- 24 位十六进制，形态对齐 ObjectId
+    session_id      TEXT NOT NULL,
+    role            TEXT NOT NULL,
+    text            TEXT,
+    rewritten_query TEXT DEFAULT '',
+    item_names      TEXT,                       -- JSON 数组
+    image_urls      TEXT,                       -- JSON 数组
+    ts              REAL NOT NULL,
+    meta            TEXT                        -- JSON 对象（检索遥测指标）
+);
+CREATE INDEX IF NOT EXISTS idx_session_ts ON chat_message (session_id, ts DESC);
+"""
+
+
+def _new_id() -> str:
+    """生成 24 位十六进制主键，与 MongoDB ObjectId 的字符串形态保持一致。"""
+    return os.urandom(12).hex()
+
+
+def _loads(raw, default):
+    """JSON 字段反序列化，脏数据不抛异常。"""
+    if raw is None or raw == "":
+        return default
+    try:
+        return json.loads(raw)
+    except Exception:  # noqa: BLE001
+        return default
+
+
+def _dumps(val):
+    """JSON 字段序列化，None 原样存 NULL。"""
+    if val is None:
+        return None
+    return json.dumps(val, ensure_ascii=False)
+
+
 class HistoryMongoTool:
     """
-    MongoDB 历史对话记录读写工具类 (基于原生 PyMongo 实现)
-    核心功能：封装MongoDB的连接、集合初始化、索引创建，为上层提供统一的数据库操作入口
-    扩展功能：支持与LangChain消息对象的格式转换（原代码预留能力）
+    历史对话记录读写工具类（SQLite 实现）
+    类名保留 HistoryMongoTool，避免上层 import 失效。
     """
 
-    def __init__(self):
-        """
-        类初始化方法：完成MongoDB的连接、数据库/集合获取、索引创建
-        初始化失败会抛出异常并记录错误日志，确保程序感知连接问题
-        """
-        try:
-            # 从环境变量读取MongoDB连接地址（敏感配置，不硬编码）
-            self.mongo_url = os.getenv("MONGO_URL")
-            # 从环境变量读取要使用的数据库名称
-            self.db_name = os.getenv("MONGO_DB_NAME")
+    def __init__(self, db_path: str = None):
+        self.db_path = db_path or DB_PATH
+        # 数据库文件所在目录可能不存在（首次启动），先建目录
+        parent = os.path.dirname(os.path.abspath(self.db_path))
+        os.makedirs(parent, exist_ok=True)
+        # SQLite 连接跨线程复用需要 check_same_thread=False，读写用锁串行化
+        self._lock = threading.RLock()
+        self._conn = sqlite3.connect(self.db_path, check_same_thread=False)
+        self._conn.row_factory = sqlite3.Row
+        # WAL 模式：读写不互相阻塞，适合 FastAPI 多 worker 线程场景
+        self._conn.execute("PRAGMA journal_mode=WAL")
+        self._conn.execute("PRAGMA synchronous=NORMAL")
+        self._conn.executescript(_SCHEMA)
+        self._conn.commit()
+        logger.info(f"Successfully opened history store (SQLite): {self.db_path}")
 
-            # 创建MongoDB客户端实例，建立与数据库的连接
-            self.client = MongoClient(self.mongo_url)
-            # 获取指定名称的数据库对象
-            self.db = self.client[self.db_name]
-            # 获取对话记录的集合（相当于关系型数据库的表），集合名：chat_message
-            self.chat_message = self.db["chat_message"]
+    # ---------- 底层读写 ----------
+    def _execute(self, sql: str, params: tuple = ()):
+        with self._lock:
+            cur = self._conn.execute(sql, params)
+            self._conn.commit()
+            return cur
 
-            # 为chat_message集合创建复合索引，提升查询性能
-            # 索引规则：session_id升序 + ts降序，适配"按会话查最新记录"的核心查询场景
-            # create_index自带幂等性：索引已存在时不会重复创建，无需额外判断
-            self.chat_message.create_index([("session_id", 1), ("ts", -1)])
+    def _query(self, sql: str, params: tuple = ()) -> List[sqlite3.Row]:
+        with self._lock:
+            return self._conn.execute(sql, params).fetchall()
 
-            # 记录成功日志，确认数据库连接和初始化完成
-            logger.info(f"Successfully connected to MongoDB: {self.db_name}")
-        except Exception as e:
-            # 捕获所有初始化异常，记录详细错误日志
-            logger.error(f"Failed to connect to MongoDB: {e}")
-            # 重新抛出异常，让调用方感知初始化失败，避免使用未初始化的实例
-            raise
+    @staticmethod
+    def _row_to_dict(row: sqlite3.Row) -> Dict[str, Any]:
+        """把表行还原成原 MongoDB 文档形状（_id + 各业务字段）。"""
+        return {
+            "_id": row["id"],
+            "session_id": row["session_id"],
+            "role": row["role"],
+            "text": row["text"],
+            "rewritten_query": row["rewritten_query"] or "",
+            "item_names": _loads(row["item_names"], None),
+            "image_urls": _loads(row["image_urls"], None),
+            "ts": row["ts"],
+            **({"meta": _loads(row["meta"], None)} if row["meta"] else {}),
+        }
+
+    # ---------- 与原 pymongo 版同名的工具方法 ----------
+    def upsert(self, document: Dict[str, Any], message_id: str = None) -> str:
+        """新增或更新一条记录，返回记录主键字符串。"""
+        rec_id = message_id or _new_id()
+        if message_id:
+            cur = self._execute(
+                """UPDATE chat_message
+                      SET session_id=?, role=?, text=?, rewritten_query=?,
+                          item_names=?, image_urls=?, ts=?, meta=?
+                    WHERE id=?""",
+                (
+                    document.get("session_id"), document.get("role"), document.get("text"),
+                    document.get("rewritten_query") or "",
+                    _dumps(document.get("item_names")), _dumps(document.get("image_urls")),
+                    document.get("ts"), _dumps(document.get("meta")), message_id,
+                ),
+            )
+            # 传入的 message_id 在库中不存在（如前端换了浏览器）→ 退化为插入，避免消息丢失
+            if cur.rowcount == 0:
+                self._insert(rec_id, document)
+            return message_id
+        self._insert(rec_id, document)
+        return rec_id
+
+    def _insert(self, rec_id: str, document: Dict[str, Any]) -> None:
+        self._execute(
+            """INSERT INTO chat_message
+                   (id, session_id, role, text, rewritten_query, item_names, image_urls, ts, meta)
+               VALUES (?,?,?,?,?,?,?,?,?)""",
+            (
+                rec_id, document.get("session_id"), document.get("role"), document.get("text"),
+                document.get("rewritten_query") or "",
+                _dumps(document.get("item_names")), _dumps(document.get("image_urls")),
+                document.get("ts"), _dumps(document.get("meta")),
+            ),
+        )
+
+    def find_recent(self, session_id: str, limit: int = 10) -> List[Dict[str, Any]]:
+        """按 ts 升序取该会话前 limit 条（与原实现语义一致）。"""
+        rows = self._query(
+            # rowid 作为同毫秒写入的稳定次序，避免 user/assistant 顺序在同步写入时被翻转
+            "SELECT * FROM chat_message WHERE session_id=? ORDER BY ts ASC, rowid ASC LIMIT ?",
+            (session_id, int(limit)),
+        )
+        return [self._row_to_dict(r) for r in rows]
+
+    def update_item_names(self, ids: List[str], item_names: List[str]) -> int:
+        if not ids:
+            return 0
+        placeholders = ",".join("?" * len(ids))
+        cur = self._execute(
+            f"UPDATE chat_message SET item_names=? WHERE id IN ({placeholders})",
+            (_dumps(item_names), *ids),
+        )
+        return cur.rowcount
+
+    def update_latest_assistant_meta(self, session_id: str, meta: Dict[str, Any]) -> bool:
+        rows = self._query(
+            "SELECT id FROM chat_message WHERE session_id=? AND role='assistant' "
+            "ORDER BY ts DESC, rowid DESC LIMIT 1",
+            (session_id,),
+        )
+        if not rows:
+            return False
+        self._execute(
+            "UPDATE chat_message SET meta=? WHERE id=?",
+            (_dumps(meta), rows[0]["id"]),
+        )
+        return True
+
+    def delete_session(self, session_id: str) -> int:
+        cur = self._execute("DELETE FROM chat_message WHERE session_id=?", (session_id,))
+        return cur.rowcount
+
+    def close(self) -> None:
+        with self._lock:
+            self._conn.close()
 
 
-# 定义全局变量：存储HistoryMongoTool的单例实例
-# 目的：将数据库连接的初始化提前到模块加载阶段，避免第一次调用接口时才建立连接（提升首次响应速度）
-_history_mongo_tool = HistoryMongoTool()
+# 定义全局变量：存储单例实例（模块加载即建立连接，提升首问响应速度）
+try:
+    _history_mongo_tool: HistoryMongoTool = HistoryMongoTool()
+except Exception as _e:  # noqa: BLE001
+    # 存储不可用不应导致整个服务起不来：降级为 None，调用时按空结果处理
+    logger.error(f"历史存储初始化失败（将降级为空历史）：{_e}")
+    _history_mongo_tool = None
 
 
 def get_history_mongo_tool() -> HistoryMongoTool:
     """
-    获取HistoryMongoTool的单例实例（懒加载模式）
-    核心逻辑：全局实例为空时创建，不为空时直接返回，保证整个程序只有一个数据库连接实例
-    :return: HistoryMongoTool的单例实例
+    获取单例实例（懒加载模式）：全局实例为空时创建，保证整个程序只有一条连接。
     """
-    # 声明使用全局变量，避免函数内视为局部变量
     global _history_mongo_tool
-    # 懒加载：仅当全局实例为空时，才创建新的实例
     if _history_mongo_tool is None:
         _history_mongo_tool = HistoryMongoTool()
-    # 返回单例实例
     return _history_mongo_tool
 
 
 def save_chat_message(
-        session_id: str,role: str,text: str,
+        session_id: str, role: str, text: str,
         rewritten_query: str = "",
         item_names: List[str] = None,
         image_urls: List[str] = None,
@@ -89,192 +224,94 @@ def save_chat_message(
         meta: dict = None
 ) -> str:
     """
-    写入/更新单条会话记录到MongoDB
-    支持两种模式：无message_id时新增记录，有message_id时更新已有记录
-    :param session_id: 会话唯一标识，关联对话所属的会话
-    :param role: 消息角色，固定值：user（用户）/assistant（助手）
-    :param text: 对话核心内容，用户的提问或助手的回答
-    :param rewritten_query: 重写后的查询语句（可选，用于检索增强等场景，默认空字符串）
-    :param item_names: 关联的商品名称列表（可选，支持多商品，默认None）
-    :param image_urls: 关联的图片URL列表（可选，默认None）
-    :param message_id: 记录主键ID（可选，有值则更新，无值则新增）
-    :param meta: 检索遥测指标（可选，含检索耗时/召回数/相关度/命中状态等），随助手答案一并持久化，
-                 供前端刷新后从历史恢复指标行与遥测侧栏，避免「刷新即丢失」
-    :return: 插入/更新的记录唯一标识（新增返回ObjectId字符串，更新返回传入的message_id）
+    写入/更新单条会话记录
+    支持两种模式：无 message_id 时新增记录，有 message_id 时更新已有记录
+    :return: 插入/更新的记录唯一标识
     """
-    # 生成当前时间的时间戳（秒级），用于记录消息的创建时间，后续用于排序和查询
     ts = datetime.now().timestamp()
-
-    # 构造要插入/更新的文档数据（MongoDB的基本数据单元是文档，类似Python字典）
     document = {
-        "session_id": session_id,  # 会话ID，关联维度
-        "role": role,  # 消息角色
-        "text": text,  # 消息内容
-        "rewritten_query": rewritten_query or "",  # 问题优化后的改写，空值处理为空字符串
-        "item_names": item_names,  # 关联商品名称列表
-        "image_urls": image_urls,  # 关联图片URL列表
-        "ts": ts  # 时间戳，排序和时间筛选维度
+        "session_id": session_id,
+        "role": role,
+        "text": text,
+        "rewritten_query": rewritten_query or "",
+        "item_names": item_names,
+        "image_urls": image_urls,
+        "ts": ts,
     }
     # 检索遥测指标：有则随记录落库（历史恢复时前端据此重绘指标行/侧栏）
     if meta is not None:
         document["meta"] = meta
 
-    # 获取全局的HistoryMongoTool实例，使用单例模式
-    mongo_tool = get_history_mongo_tool()
-    # 判断是否传入主键ID，区分更新/新增逻辑
-    if message_id:# 更新
-        # 有message_id：执行更新操作（根据主键更新）
-        result = mongo_tool.chat_message.update_one(
-            {"_id": ObjectId(message_id)},  # 更新条件：主键匹配（需将字符串转为ObjectId类型）
-            {"$set": document}  # 更新操作：$set表示只更新指定字段，保留其他字段
-        )
-        # 更新操作返回传入的message_id作为标识
-        return message_id
-    else:
-        # 无message_id：执行新增操作
-        result = mongo_tool.chat_message.insert_one(document)
-        # 新增操作返回插入的ObjectId并转为字符串，便于上层使用（避免直接返回ObjectId对象）
-        return str(result.inserted_id)# message_id 唯一的一条记录
+    try:
+        return get_history_mongo_tool().upsert(document, message_id)
+    except Exception as e:  # noqa: BLE001
+        logger.error(f"写入历史会话失败: {e}")
+        return ""
 
 
 def update_message_item_names(ids: List[str], item_names: List[str]) -> int:
     """
     批量更新历史会话记录的关联商品名称
-    :param ids: 要更新的记录主键ID列表（字符串类型）
-    :param item_names: 要设置的新商品名称列表
-    :return: 实际更新的文档数量，更新失败返回0
+    :return: 实际更新的记录数量，更新失败返回 0
     """
-    # 获取全局的HistoryMongoTool实例，使用单例模式
-    mongo_tool = get_history_mongo_tool()
     try:
-        # 将字符串类型的主键列表转为MongoDB的ObjectId类型（数据库中主键是ObjectId类型）
-        object_ids = [ObjectId(i) for i in ids]
-        # 执行批量更新操作
-        result = mongo_tool.chat_message.update_many(
-            # 更新条件：复合条件，同时满足
-            {
-                "_id": {"$in": object_ids}  # 主键在指定的ID列表中（批量筛选）
-            },
-            {"$set": {"item_names": item_names}}  # 更新操作：设置新的商品名称列表
-        )
-        # 记录更新成功日志，包含更新数量和新的商品名称
-        logger.info(f"Updated {result.modified_count} records to item_names: {item_names}")
-        # 返回实际更新的数量（modified_count：真正被修改的文档数，区别于matched_count）
-        return result.modified_count
-    except Exception as e:
-        # 捕获批量更新异常，记录错误日志
+        n = get_history_mongo_tool().update_item_names(ids, item_names)
+        logger.info(f"Updated {n} records to item_names: {item_names}")
+        return n
+    except Exception as e:  # noqa: BLE001
         logger.error(f"Error updating history item_names: {e}")
-        # 异常时返回0，标识更新失败
         return 0
 
-# 获取最近的消息
+
 def update_latest_assistant_meta(session_id: str, meta: dict) -> bool:
     """
     把本轮检索遥测指标回写进「该会话最近一条助手消息」，使其随历史持久化。
-    检索指标（检索耗时/召回数/最高相关度/命中状态）在 LangGraph 跑完才汇总，
-    而助手答案在 node_answer_output 节点已先行落库，故此处按 ts 倒序定位最新助手消息再补写 meta。
-    :param session_id: 会话唯一标识
-    :param meta: 检索遥测指标字典（来自 query_service._build_retrieval_meta）
-    :return: 是否成功补写（找到并更新返回 True，未找到或异常返回 False）
+    :return: 是否成功补写
     """
     if not meta:
         return False
-    mongo_tool = get_history_mongo_tool()
     try:
-        # 定位该会话最近一条 assistant 消息（ts 最大）
-        latest = mongo_tool.chat_message.find_one(
-            {"session_id": session_id, "role": "assistant"},
-            sort=[("ts", -1)]
-        )
-        if not latest:
-            return False
-        mongo_tool.chat_message.update_one(
-            {"_id": latest["_id"]},
-            {"$set": {"meta": meta}}
-        )
-        return True
-    except Exception as e:
+        return get_history_mongo_tool().update_latest_assistant_meta(session_id, meta)
+    except Exception as e:  # noqa: BLE001
         logger.error(f"回写检索指标到历史失败: {e}")
         return False
 
 
 def get_recent_messages(session_id: str, limit: int = 10) -> List[Dict[str, Any]]:
     """
-    查询指定会话的最近N条对话记录，返回原始字典格式
-    结果按时间正序排列，可直接喂给LLM作为上下文
-    :param session_id: 会话唯一标识，用于筛选指定会话的记录
-    :param limit: 条数限制，默认返回最近10条
-    :return: 对话记录列表（字典格式），查询失败返回空列表
+    查询指定会话的对话记录，返回原始字典格式（结果按时间正序排列，可直接喂给 LLM）
+    :return: 对话记录列表，查询失败返回空列表
     """
-    """
-    查询指定会话的最近N条对话记录，返回原始字典格式
-    结果按时间正序排列，可直接喂给LLM作为上下文
-    :param session_id: 会话唯一标识，用于筛选指定会话的记录
-    :param limit: 条数限制，默认返回最近10条
-    :return: 对话记录列表（字典格式），查询失败返回空列表
-    """
-    # 获取全局的HistoryMongoTool实例，使用单例模式
-    mongo_tool = get_history_mongo_tool()# 拿到链接mongodb的客户端对象
     try:
-        # 构造查询条件：仅查询指定session_id的记录
-        query = {"session_id": session_id}# 你要查的那个会话
-
-        # 执行查询：按时间戳升序排序，限制返回条数
-        # find(query)：获取符合条件的游标（惰性加载，不立即查询）
-        # sort("ts", ASCENDING)：按ts字段升序（从旧到新），适配LLM上下文顺序
-        # limit(limit)：限制返回的最大条数
-        cursor = mongo_tool.chat_message.find(query).sort("ts", ASCENDING).limit(limit)
-        # 将游标转为列表，触发实际数据库查询，获取所有符合条件的文档
-        messages = list(cursor)
-        # 返回查询结果列表
-        # 将每条文档的 _id 转成字符串，保证 JSON 可序列化
-        for msg in messages:
-            if "_id" in msg:
-                msg["_id"] = str(msg["_id"])
-        return messages
-    except Exception as e:
-        # 捕获查询异常，记录错误日志
+        return get_history_mongo_tool().find_recent(session_id, limit)
+    except Exception as e:  # noqa: BLE001
         logger.error(f"Error getting recent messages: {e}")
-        # 异常时返回空列表，避免上层处理None报错
         return []
 
 
 def clear_history(session_id: str) -> int:
     """
     清空指定会话的所有历史对话记录
-    :param session_id: 会话唯一标识，用于筛选要删除的记录
-    :return: 实际删除的文档数量，删除失败返回0
+    :return: 实际删除的记录数量，删除失败返回 0
     """
-    # 获取全局的HistoryMongoTool实例，使用单例模式避免重复创建数据库连接
-    mongo_tool = get_history_mongo_tool()
     try:
-        # 执行批量删除操作：删除所有session_id匹配的文档
-        result = mongo_tool.chat_message.delete_many({"session_id": session_id})
-        # 记录删除成功日志，包含删除数量和会话ID，便于问题排查
-        logger.info(f"Deleted {result.deleted_count} messages for session {session_id}")
-        # 返回实际删除的数量（delete_many的返回对象包含deleted_count属性）
-        return result.deleted_count
-    except Exception as e:
-        # 捕获删除异常，记录错误日志，包含会话ID
+        n = get_history_mongo_tool().delete_session(session_id)
+        logger.info(f"Deleted {n} messages for session {session_id}")
+        return n
+    except Exception as e:  # noqa: BLE001
         logger.error(f"Error clearing history for session {session_id}: {e}")
-        # 异常时返回0，标识删除失败
         return 0
 
 
 if __name__ == "__main__":
-    # # 测试代码
-    # save_chat_message(
-    #     "test_session_id_001", "user", "请问这个怎么用？", "请问HAK180烫金机如何使用？"
-    # )
-    clear_history("test_session_002")
-    # 测试会话，用于确认商品名称是否能正确的提取
-    # sid = "test_session_002"
-    # # 1. 写入用户消息
-    # save_chat_message(sid, "user", "你好，有烫金机吗？")
-    # # 2. 写入助手回复
-    # save_chat_message(sid, "assistant", "你好！请问你想询问哪个型号？")
-    # # 3. 写入带关联商品的用户消息
-    # save_chat_message(sid, "user", "brother的HAK180烫金机")
-    # save_chat_message(sid, "assistant", "有的")
-
-
+    # 冒烟测试：写 → 读 → 改 → 删 全链路
+    sid = "test_session_sqlite"
+    clear_history(sid)
+    uid = save_chat_message(sid, "user", "你好，有烫金机吗？", "请问有烫金机吗")
+    aid = save_chat_message(sid, "assistant", "有的，请问需要哪个型号？", meta={"hit": True})
+    print("user_id =", uid, "| assistant_id =", aid)
+    print("recent =", get_recent_messages(sid, 5))
+    print("update_meta =", update_latest_assistant_meta(sid, {"hit": False, "score": 0.8}))
+    print("update_names =", update_message_item_names([uid], ["HAK180 烫金机"]))
+    print("after  =", get_recent_messages(sid, 5))
+    print("cleared =", clear_history(sid))
