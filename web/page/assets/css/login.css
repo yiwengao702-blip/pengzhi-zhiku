@@ -230,5 +230,13 @@
   }
   .login-hero__title{margin-top:24px;font-size:24px}
   .login-hero__feats{display:none}
-  .login-card{padding:36px 28px 40px;max-width:none}
+  /* width:auto + 收窄外边距：避免 width:100% 叠加 margin 后撑出视口横向滚动 */
+  .login-card{padding:36px 28px 40px;max-width:none;width:auto;margin:16px}
+}
+@media (max-width:420px){
+  .login-card{padding:28px 18px 32px;margin:12px;border-radius:16px}
+  .login-card__head h2{font-size:22px}
+  .login-hero{padding:28px 20px 22px}
+  .login-hero__title{font-size:21px}
+  .login-demo{padding:14px}
 }
